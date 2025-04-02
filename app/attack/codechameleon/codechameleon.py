@@ -1,41 +1,10 @@
-# from transformers import AutoTokenizer, AutoModelForCausalLM
-# import torch
-from openai import OpenAI
 from tqdm import tqdm
-import argparse
 import time
 
 from app.models import AttackParameter
 from app.utils.codechameleon.utils import save_generation, complete_format, save_prompts
 from app.attack.codechameleon.template import get_prompts
-
-WAIT_TIME = 0
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='open_source_inference')
-
-    # Path
-    parser.add_argument('--model_path', type=str, default='gpt-3.5-turbo-1106', help='The path or name of the model to evaluate')
-    parser.add_argument('--problem_path', type=str, default='../../data/codechameleon/all_problem_test.csv', help='the path of the harmful problems')
-    parser.add_argument('--save_path', type=str, default='../../results/codechameleon/attack_responses', help='the path to save results')
-
-    # Convert 
-    parser.add_argument('--encrypt_rule', type=str, default='binary_tree', choices=['none', 'binary_tree', 'reverse','odd_even','length'], help='different encrypt methods')
-    parser.add_argument('--prompt_style', type=str, default='code', choices=['text', 'code'], help='the style of prompt')
-    parser.add_argument('--save_prompts', action='store_true', help='Whether to save prompts')
-
-
-    # Model generate parameter
-    parser.add_argument('--max_new_tokens', type=int, default=1024)
-    parser.add_argument('--do_sample', action='store_true', help='use reward clip')
-    parser.add_argument('--temperature', type=float, default=1.0, help='the max length of model generation')
-    parser.add_argument('--repetition_penalty', type=float, default=1.1, help='the max length of model generation')
-    parser.add_argument('--top_p', type=float, default=0.9, help='the max length of model generation')
-    parser.add_argument('--use_cache', action='store_true', help='use reward clip')
-
-    args = parser.parse_args()
-
-    return args
+from app.utils.renellm.llm_completion_utils import get_llm_responses
 
 def set_config(model_generation_config, args):
     generation_config = model_generation_config
@@ -47,34 +16,6 @@ def set_config(model_generation_config, args):
     generation_config.use_cache = args.use_cache
 
     return generation_config
-
-
-def query_function(attack_parameter:AttackParameter, temperature, chat_prompts):
-
-    client = OpenAI(
-        api_key="sk-eb3b86139e574719aa5aed8dc1348cc7",
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-    )
-    results = []
-    index = 0
-
-    with tqdm(total=len(chat_prompts)) as pbar:
-        for chat_prompt in chat_prompts:
-            index = index + 1
-            response = client.chat.completions.create(
-                model="qwen-plus",
-                messages=chat_prompt,
-                temperature=temperature
-            )
-            pbar.update(1)
-            model_output = response.choices[0].message.content.strip()
-            print(model_output)
-            results.append(model_output)
-            if index % 20 ==0:
-                save_generation(attack_parameter, results, index)
-            time.sleep(WAIT_TIME) 
-
-    return results, index
 
 # def open_source_attack(args):
 #     prompts, original_queries = get_prompts(args)
@@ -107,37 +48,37 @@ def query_function(attack_parameter:AttackParameter, temperature, chat_prompts):
 
 def codechameleon(attack_parameter : AttackParameter):
 
-    # 配置默认参数
-
-    # 攻击方式 : different encrypt methods
+    # 配置攻击默认参数  :  攻击方式 : different encrypt methods
     encrypt_rule = "binary_tree"
     prompt_style = "code"
     temperature = 0
 
-    prompts, original_queries = get_prompts(prompt_style,attack_parameter.malicious_question_set, encrypt_rule)
-    complete_prompts = complete_format(attack_parameter.model_name, prompts)
-    results, index = query_function(attack_parameter,temperature, complete_prompts)
+    print(attack_parameter.malicious_question_set)
+
+    # 获取原始 prompts 模板
+    prompts, original_queries = get_prompts(prompt_style, attack_parameter.malicious_question_set, encrypt_rule)
+    # 包装成 大模型对话框架
+    complete_prompts = complete_format(attack_parameter.attack_model, prompts)
+    # 获取攻击结果
+
+    results = []
+    index = 0
+
+    with tqdm(total=len(complete_prompts)) as pbar:
+        for chat_prompt in complete_prompts:
+            index = index + 1
+            model_output = get_llm_responses(attack_parameter.attack_model, chat_prompt, temperature,
+                                             attack_parameter.retry_times)
+            pbar.update(1)
+            results.append(model_output)
+            print(model_output)
+
+            if index % 20 == 0:
+                save_generation(attack_parameter, results, index)
+
+            time.sleep(1)
+
+    # 保存攻击结果
     save_generation(attack_parameter, results, index)
 
-
-
-# if __name__ == "__main__":
-#     args = parse_args()
-#     if 'Llama' in args.model_path:
-#         args.model_name = 'llama2'
-#     elif 'vicuna' in args.model_path:
-#         args.model_name = 'vicuna'
-#     elif 'gpt' in args.model_path:
-#         args.model_name = 'gpt'
-#
-#     if '7b' in args.model_path:
-#         args.model_size = '7B'
-#     elif '13b' in args.model_path:
-#         args.model_size = '13B'
-#     elif '70b' in args.model_path:
-#         args.model_size = '70B'
-#     elif 'gpt-4' in args.model_path:
-#         args.model_size = '4'
-#     elif 'gpt-3.5' in args.model_path:
-#         args.model_size = '3.5'
-#     codechameleon(args)
+    return results

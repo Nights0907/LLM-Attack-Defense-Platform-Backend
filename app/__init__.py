@@ -28,11 +28,8 @@ def create_app(config_name):
 
     # 注册蓝图(导入包初始化模块__init__中的内容时，需要加‘.’)
     from .attack import attack as attack_bp
-    from .main import main as main_bp
-    from .reader import reader as reader_bp
     app.register_blueprint(attack_bp)
-    app.register_blueprint(main_bp)
-    app.register_blueprint(reader_bp,url_prefix='/reader')
+
     # 返回 flask 实例
     return app
 

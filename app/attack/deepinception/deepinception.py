@@ -7,6 +7,8 @@ from app.models import AttackParameter
 # 引入 deepinception 的配置文件
 from app.utils.deepinception.config import TARGET_TEMP, TARGET_TOP_P
 from app.utils.deepinception.conversers import load_attack_and_target_models, TargetLM
+from app.utils.renellm.llm_completion_utils import get_llm_responses
+
 
 def deep_inception(attack_parameter : AttackParameter):
 
@@ -40,11 +42,12 @@ def deep_inception(attack_parameter : AttackParameter):
                  top_p=TARGET_TOP_P,  # init to 1
                  preloaded_model=None,
                  )
+
         results[idx]['topic'] = data['topic']
         # Get target responses
         results[idx]['qA_pairs'] = []
         for question in questions:
-            target_response_list = targetLM.get_response(question, defense)
+            target_response_list = targetLM.get_response(attack_parameter,question, defense)
             results[idx]['qA_pairs'].append({'Q': question, 'A': target_response_list})
             print(target_response_list)
 

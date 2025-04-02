@@ -1,10 +1,7 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from openai import OpenAI
+from app.models import AttackParameter
 from app.utils.deepinception import common
-from app.utils.deepinception.config import (FALCON_PATH, LLAMA_PATH, TARGET_TEMP, TARGET_TOP_P,
-                    VICUNA_PATH)
-from app.utils.deepinception.language_models import GPT, HuggingFace
+from app.utils.deepinception.config import ( TARGET_TEMP, TARGET_TOP_P)
+from app.utils.deepinception.language_models import GPT
 
 
 def load_attack_and_target_models(args):
@@ -35,13 +32,10 @@ class TargetLM():
         self.temperature = temperature
         self.max_n_tokens = max_n_tokens
         self.top_p = top_p
-        if preloaded_model is None:
-            self.model, self.template = load_indiv_model(model_name)
-        else:
-            self.model = preloaded_model
-            _, self.template = get_model_path_and_template(model_name)
+        self.model, self.template = load_indiv_model(model_name)
 
-    def get_response(self, prompts_list, defense_type):
+
+    def get_response(self, attack_parameter : AttackParameter,prompts_list, defense_type):
         conv = common.conv_template(self.template)
 
         # Self-reminder defense + Attack:
@@ -72,24 +66,10 @@ class TargetLM():
         else:
             full_prompts = conv.get_prompt()
 
-        #
-        # client = OpenAI(
-        #     api_key="sk-eb3b86139e574719aa5aed8dc1348cc7",
-        #     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        # )
-        #
-        # response = client.chat.completions.create(
-        #     model="qwen-plus",
-        #     messages=full_prompts,
-        #     temperature=0
-        # )
-        #
-        # model_output = response.choices[0].message.content.strip()
-
-        outputs_list = self.model.batched_generate(full_prompts,
-                                                   max_n_tokens=self.max_n_tokens,
-                                                   temperature=self.temperature,
-                                                   top_p=self.top_p
+        outputs_list = self.model.batched_generate(attack_parameter.attack_model,
+                                                   full_prompts,
+                                                   self.temperature,
+                                                   attack_parameter.retry_times,
                                                    )
 
         return outputs_list
@@ -97,51 +77,8 @@ class TargetLM():
 
 def load_indiv_model(model_name, device=None):
     model_path, template = get_model_path_and_template(model_name)
-    if model_name in ["qwen-plus", "gpt-4"]:
-        lm = GPT(model_name)
-    elif model_name == 'falcon':
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            trust_remote_code=True,
-            torch_dtype=torch.bfloat16,
-            low_cpu_mem_usage=True,
-            device_map="auto",
-        ).eval()
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_path, trust_remote_code=True,
-        )
-
-        model.config.eos_token_id = tokenizer.eos_token_id
-        model.config.pad_token_id = tokenizer.pad_token_id
-        tokenizer.pad_token = tokenizer.eos_token
-        tokenizer.padding_side = 'left'
-        lm = HuggingFace(model_name, model, tokenizer)
-
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            torch_dtype=torch.float16,
-            low_cpu_mem_usage=True, device_map="auto").eval()
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            use_fast=False
-        )
-
-        if 'llama-2' in model_path.lower():
-            tokenizer.pad_token = tokenizer.unk_token
-            tokenizer.padding_side = 'left'
-        if 'vicuna' in model_path.lower():
-            tokenizer.pad_token = tokenizer.eos_token
-            tokenizer.padding_side = 'left'
-        if not tokenizer.pad_token:
-            tokenizer.pad_token = tokenizer.eos_token
-
-        lm = HuggingFace(model_name, model, tokenizer)
-
+    lm = GPT(model_name)
     return lm, template
-
 
 def get_model_path_and_template(model_name):
     full_model_dict = {
@@ -151,20 +88,8 @@ def get_model_path_and_template(model_name):
         },
         "qwen-plus": {
             "path": "qwen-plus",
-            "template": "gpt-3.5-turbo"
-        },
-        "vicuna": {
-            "path": VICUNA_PATH,
-            "template": "vicuna_v1.1"
-        },
-        "llama-2": {
-            "path": LLAMA_PATH,
-            "template": "llama-2"
-        },
-        "falcon": {
-            "path": FALCON_PATH,
-            "template": "falcon"
-        },
+            "template": "qwen-plus"
+        }
     }
     path, template = full_model_dict[model_name]["path"], full_model_dict[model_name]["template"]
     return path, template

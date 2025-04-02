@@ -1,18 +1,14 @@
-from app.main.utils.renellm.llm_completion_utils import chatCompletion, claudeCompletion
+from app.utils.renellm.llm_completion_utils import get_llm_responses, claudeCompletion
 
 def gpt_responses(args, text: str):
     user_input = text
     user_message={"role": "user", "content": user_input}
-    messages = []
-    messages.append(user_message)
-    model_output = chatCompletion(args.test_model,
+    messages = [user_message]
+    model_output = get_llm_responses(args.test_model,
                                   messages,
                                   args.temperature,
                                   args.retry_times,
-                                  args.round_sleep,
-                                  args.fail_sleep,
-                                  args.gpt_api_key,
-                                  args.gpt_base_url)
+                                  )
     return model_output
 
 def claude_responses(args, text: str):

@@ -7,6 +7,9 @@ import openai
 import torch
 from openai import OpenAI
 
+from app.models import AttackParameter
+from app.utils.renellm.llm_completion_utils import get_llm_responses
+
 
 class LanguageModel():
     def __init__(self, model_name):
@@ -85,46 +88,26 @@ class GPT(LanguageModel):
     API_QUERY_SLEEP = 2
     API_MAX_RETRY = 5
     API_TIMEOUT = 20
-    # openai.api_key = os.getenv("OPENAI_API_KEY")
-    openai.api_key = "sk-eb3b86139e574719aa5aed8dc1348cc7"
 
-    def generate(self, conv: List[Dict],
-                 max_n_tokens: int,
+    def generate(self, attack_model : str,
+                 conv: List[Dict],
                  temperature: float,
-                 top_p: float):
-        '''
-        Args:
-            conv: List of dictionaries, OpenAI API format
-            max_n_tokens: int, max number of tokens to generate
-            temperature: float, temperature for sampling
-            top_p: float, top p for sampling
-        Returns:
-            str: generated response
-        '''
-        client = OpenAI(
-            api_key="sk-eb3b86139e574719aa5aed8dc1348cc7",
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+                 retry_times: int,
+                 ):
+
         output = self.API_ERROR_OUTPUT
+
         for _ in range(self.API_MAX_RETRY):
-            #try:
-            response = client.chat.completions.create(
-                # model = self.model_name,
-                model="qwen-plus",
-                messages=conv,
-                # 自己加的base_url
-                max_tokens=max_n_tokens,
-                temperature=temperature,
-            )
-            output = response.choices[0].message.content.strip()
+            output = get_llm_responses(attack_model,conv,temperature,retry_times)
             break
 
 
         return output
 
     def batched_generate(self,
+                         attack_model : str,
                          convs_list: List[List[Dict]],
-                         max_n_tokens: int,
                          temperature: float,
-                         top_p: float = 1.0, ):
-        return [self.generate(conv, max_n_tokens, temperature, top_p) for conv in convs_list]
+                         retry_times: int,
+                         ):
+        return [self.generate(attack_model,conv,temperature,retry_times) for conv in convs_list]

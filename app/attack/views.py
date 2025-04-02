@@ -39,16 +39,16 @@ def attack():
     id = username+'_'+formatted_time
 
     # 根据攻击方法获得对应有害数据集
-    if data['attack_method'] == "renallm" and data["malicious_question_set"] == "advbench" :
+    if data['attack_method'] == "renellm" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/renellm/advbench/harmful_behaviors_test.csv"
     elif data['attack_method'] == "codechameleon" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/codechameleon/all_problem_test.csv"
     elif data['attack_method'] == "deepinception" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/deepinception/data"
     elif data['attack_method'] == "jailbreakingllm" and data["malicious_question_set"] == "advbench" :
-        malicious_question_set = "app/data/codechameleon/all_problem_test.csv"
+        malicious_question_set = "app/data/jailbreakingllm/all_problem_test.csv"
     elif data['attack_method'] == "sap" and data["malicious_question_set"] == "advbench" :
-        malicious_question_set = "app/data/codechameleon/all_problem_test.csv"
+        malicious_question_set = "app/data/sap/all_problem_test.csv"
 
 
     # 创建AttackRecord对象并赋值

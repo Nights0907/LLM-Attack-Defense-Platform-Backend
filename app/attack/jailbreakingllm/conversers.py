@@ -4,6 +4,8 @@ from app.attack.jailbreakingllm.common import get_api_key, conv_template, extrac
 # from language_models import APILiteLLM, GPT
 from app.attack.jailbreakingllm.language_models import GPT
 from app.attack.jailbreakingllm.config import FASTCHAT_TEMPLATE_NAMES, Model
+from app.models import AttackParameter
+from app.utils.renellm.llm_completion_utils import get_llm_responses
 
 
 def load_attack_and_target_models(attack_model,attack_max_n_tokens,max_n_attack_attempts,category,evaluate_locally,target_model,target_max_n_tokens,jailbreakbench_phase):
@@ -25,20 +27,6 @@ def load_attack_and_target_models(attack_model,attack_max_n_tokens,max_n_attack_
     return attackLM, targetLM
 
 def load_indiv_model(model_name, local = False, use_jailbreakbench=True):
-    # global lm
-    # if use_jailbreakbench:
-    #     if local:
-    #         from jailbreakbench import LLMvLLM
-    #         lm = LLMvLLM(model_name=model_name)
-    #     else:
-    #         from jailbreakbench import LLMLiteLLM
-    #         api_key = get_api_key(Model(model_name))
-    #         lm = LLMLiteLLM(model_name= model_name, api_key = api_key)
-    # else:
-    #     if local:
-    #         raise NotImplementedError
-    #     else:
-    #         # lm = APILiteLLM(model_name)
     lm = GPT(model_name)
     return lm
 
@@ -89,7 +77,7 @@ class AttackLM():
         openai_convs_list = [conv.to_openai_api_messages() for conv in convs_list]
         return openai_convs_list, init_message
         
-    def _generate_attack(self, openai_conv_list: list[list[dict]], init_message: str):
+    def _generate_attack(self,attack_parameter:AttackParameter, openai_conv_list: list[list[dict]], init_message: str):
         batchsize = len(openai_conv_list)
         indices_to_regenerate = list(range(batchsize))
         valid_outputs = [None] * batchsize
@@ -100,10 +88,11 @@ class AttackLM():
             # Subset conversations based on indices to regenerate
             convs_subset = [openai_conv_list[i] for i in indices_to_regenerate]
             # Generate outputs 
-            outputs_list = self.model.batched_generate(convs_subset,
-                                                        max_n_tokens = self.max_n_tokens,  
-                                                        temperature = self.temperature,
-                                                        top_p = self.top_p
+            outputs_list = self.model.batched_generate(
+                                                            attack_parameter.attack_model,
+                                                            convs_subset,
+                                                            self.temperature,
+                                                            attack_parameter.retry_times
                                                        )
             
             # Check for valid outputs and update the list
@@ -128,7 +117,7 @@ class AttackLM():
             raise ValueError(f"Failed to generate valid output after {self.max_n_attack_attempts} attempts. Terminating.")
         return valid_outputs, new_adv_prompts
 
-    def get_attack(self, convs_list, prompts_list):
+    def get_attack(self, attack_parameter : AttackParameter,convs_list, prompts_list):
         """
         Generates responses for a batch of conversations and prompts using a language model. 
         Only valid outputs in proper JSON format are returned. If an output isn't generated 
@@ -145,7 +134,7 @@ class AttackLM():
         
         # Convert conv_list to openai format and add the initial message
         processed_convs_list, init_message = self.preprocess_conversation(convs_list, prompts_list)
-        valid_outputs, new_adv_prompts = self._generate_attack(processed_convs_list, init_message)
+        valid_outputs, new_adv_prompts = self._generate_attack(attack_parameter,processed_convs_list, init_message)
 
         for jailbreak_prompt, conv in zip(new_adv_prompts, convs_list):
             # For open source models, we can seed the generation with proper JSON and omit the post message
@@ -182,28 +171,15 @@ class TargetLM():
         self.model = load_indiv_model(model_name, evaluate_locally, use_jailbreakbench)            
         self.category = category
 
-    def get_response(self, prompts_list):
+    def get_response(self, attack_parameter : AttackParameter,prompts_list):
         if self.use_jailbreakbench:
-            # llm_response = self.model.query(prompts = prompts_list,
-            #                     behavior = self.category,
-            #                     phase = self.phase,
-            #                     max_new_tokens=self.max_n_tokens)
-            # responses = llm_response.responses
 
-
-            client = OpenAI(
-                api_key="sk-eb3b86139e574719aa5aed8dc1348cc7",
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-            )
             user_input = prompts_list[0]
             user_message = {"role": "user", "content": user_input}
-            messages = []
-            messages.append(user_message)
-            responses = client.chat.completions.create(
-                model="qwen-plus",
-                messages=messages
-            )
-            model_output = responses.choices[0].message.content.strip()
+            messages = [user_message]
+
+            model_output = get_llm_responses(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
+
         else:
             batchsize = len(prompts_list)
             convs_list = [conv_template(self.template) for _ in range(batchsize)]
