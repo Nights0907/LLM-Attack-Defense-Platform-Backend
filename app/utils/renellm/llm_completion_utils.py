@@ -44,8 +44,8 @@ def get_llm_responses(model, messages, temperature, retry_times):
     #     )
     # 百度 文心一言 api
     elif model == "ernie-4.5-8k-preview":
-        response = get_baidu_response(model, messages)
-        return response
+        model_output = get_baidu_response(model, messages)
+        return model_output
 
 
     try:
@@ -54,6 +54,12 @@ def get_llm_responses(model, messages, temperature, retry_times):
                 messages=messages,
                 temperature=temperature
             )
+
+        model_output = response.choices[0].message.content.strip()
+        time.sleep(1)
+
+        return model_output
+
     except Exception as e:
         print(e)
         for retry_time in range(retry_times):
@@ -70,10 +76,10 @@ def get_llm_responses(model, messages, temperature, retry_times):
             except:
                 continue
 
-    model_output = response.choices[0].message.content.strip()
-    time.sleep(1)
-
-    return model_output
+    # model_output = response.choices[0].message.content.strip()
+    # time.sleep(1)
+    #
+    # return model_output
 
 # for baidu
 

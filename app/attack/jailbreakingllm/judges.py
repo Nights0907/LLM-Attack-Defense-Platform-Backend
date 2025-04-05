@@ -13,7 +13,7 @@ from app.attack.jailbreakingllm.system_prompts import get_judge_system_prompt
 from app.attack.jailbreakingllm.loggers import logger
 
 def load_judge(judge_max_n_tokens,judge_temperature,judge_model,goal,target_str,retry_times):
-    if "qwen" in judge_model:
+    if "qwen" or "hunyuan-turbos-latest" or "deepseek-reasoner" or "ernie-4.5-8k-preview" in judge_model:
         return GPTJudge(judge_max_n_tokens,judge_temperature,judge_model,goal,target_str,retry_times)
     elif judge_model == "gcg":
         return GCGJudge()

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from app.attack.jailbreakingllm.judges import JudgeBase, load_judge
+import json
+
+from app.attack.jailbreakingllm.judges import load_judge
 from app.attack.jailbreakingllm.conversers import load_attack_and_target_models
 from app.attack.jailbreakingllm.common import process_target_response, initialize_conversations
 import psutil
@@ -80,9 +82,8 @@ def jailbreakingllm(attack_parameter : AttackParameter):
         print(f"Memory after: {memory_after} MB")
         # Get target responses
 
-        target_response_list = targetLM.get_response(attack_parameter,adv_prompt_list)
+        target_response_list,formatted_result = targetLM.get_response(attack_parameter,adv_prompt_list)
         print(target_response_list)
-
         # Get judge scores
         judge_scores = judgeLM.score(adv_prompt_list, target_response_list)
         print(judge_scores)
@@ -94,5 +95,10 @@ def jailbreakingllm(attack_parameter : AttackParameter):
         # Early stopping criterion
         if any([score == 10 for score in judge_scores]):
             break
-    
+
+        with open("app/results/sap/"+category+"/" + 'generated_cases.json', 'w', encoding="utf8") as file:
+            json.dump(formatted_result)
+
+        return formatted_result
+
 

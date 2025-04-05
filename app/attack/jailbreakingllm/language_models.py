@@ -18,14 +18,18 @@ from app.utils.renellm.llm_completion_utils import get_llm_responses
 
 class LanguageModel():
     def __init__(self, model_name):
-        self.model_name = Model(model_name)
+        self.model_name = model_name
     
-    def batched_generate(self, prompts_list: list, max_n_tokens: int, temperature: float):
+    def batched_generate(self,
+                             attack_model : str,
+                             convs_list: List[List[Dict]],
+                             temperature: float,
+                             retry_times: int,):
         """
         Generates responses for a batch of prompts using a language model.
         """
         raise NotImplementedError
-    
+
 # class APILiteLLM(LanguageModel):
 #     API_RETRY_SLEEP = 10
 #     API_ERROR_OUTPUT = "ERROR: API CALL FAILED."
@@ -102,7 +106,7 @@ class LanguageModel():
 #         return responses
 
 # class LocalvLLM(LanguageModel):
-    
+
 #     def __init__(self, model_name: str):
 #         """Initializes the LLMHuggingFace with the specified model name."""
 #         super().__init__(model_name)
@@ -161,9 +165,23 @@ class GPT(LanguageModel):
                  temperature: float,
                  retry_times : int
                  ):
-        print("this is generate")
+        start_time = time.time()
         output = get_llm_responses(attack_model,conv,temperature,retry_times)
-        print(output)
+        end_time = time.time()
+        pass_time = end_time - start_time
+
+        result = {output,pass_time}
+        return result
+
+    def generate_attack(self,
+                 attack_model : str,
+                 conv: List[Dict],
+                 temperature: float,
+                 retry_times : int
+                 ):
+
+        output = get_llm_responses(attack_model,conv,temperature,retry_times)
+
         return output
 
     def batched_generate(   self,
@@ -172,5 +190,15 @@ class GPT(LanguageModel):
                              temperature: float,
                              retry_times: int,
                          ):
+
         return [self.generate(attack_model,conv,temperature,retry_times) for conv in convs_list]
+
+    def batched_generate_attack(   self,
+                             attack_model : str,
+                             convs_list: List[List[Dict]],
+                             temperature: float,
+                             retry_times: int,
+                         ):
+
+        return [self.generate_attack(attack_model,conv,temperature,retry_times) for conv in convs_list]
 

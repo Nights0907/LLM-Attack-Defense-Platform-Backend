@@ -1,7 +1,6 @@
 import time
 import json
 import os
-import argparse
 import random
 
 from app.models import AttackParameter
@@ -23,6 +22,7 @@ def renellm(attack_parameter:AttackParameter):
     # 检查数据集问题个数
     assert (len(data) == 5)
 
+    # 单个问题还是整个数据集
     # data= data[:1] # for test
     # single prompt jailbreak
     # if args.prompt is not None:

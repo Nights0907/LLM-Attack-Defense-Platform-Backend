@@ -1,3 +1,5 @@
+import time
+
 from openai import OpenAI
 
 from app.attack.jailbreakingllm.common import get_api_key, conv_template, extract_json
@@ -43,7 +45,7 @@ class AttackLM():
                 category: str,
                 evaluate_locally: bool):
         
-        self.model_name = Model(model_name)
+        self.model_name = model_name
         self.max_n_tokens = max_n_tokens
         self.max_n_attack_attempts = max_n_attack_attempts
 
@@ -58,7 +60,7 @@ class AttackLM():
                                       use_jailbreakbench=False # Cannot use JBB as attacker
                                       )
         self.initialize_output = self.model.use_open_source_model
-        self.template = FASTCHAT_TEMPLATE_NAMES[self.model_name]
+        self.template = self.model_name
 
     def preprocess_conversation(self, convs_list: list, prompts_list: list[str]):
         # For open source models, we can seed the generation with proper JSON
@@ -88,7 +90,7 @@ class AttackLM():
             # Subset conversations based on indices to regenerate
             convs_subset = [openai_conv_list[i] for i in indices_to_regenerate]
             # Generate outputs 
-            outputs_list = self.model.batched_generate(
+            outputs_list = self.model.batched_generate_attack(
                                                             attack_parameter.attack_model,
                                                             convs_subset,
                                                             self.temperature,
@@ -172,15 +174,32 @@ class TargetLM():
         self.category = category
 
     def get_response(self, attack_parameter : AttackParameter,prompts_list):
+
+        formatted_result = []
+
         if self.use_jailbreakbench:
 
             user_input = prompts_list[0]
             user_message = {"role": "user", "content": user_input}
             messages = [user_message]
 
+            start_time = time.time()
+
             model_output = get_llm_responses(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
 
+            print(model_output)
+
+            end_time = time.time()
+            pass_time = end_time - start_time
+            item = {}
+            item["idx"] = 0
+            item["model_output"] = model_output
+            item["time_cost"] = pass_time
+
+            formatted_result.append(item)
+
         else:
+            idx = 0
             batchsize = len(prompts_list)
             convs_list = [conv_template(self.template) for _ in range(batchsize)]
             full_prompts = []
@@ -188,10 +207,20 @@ class TargetLM():
                 conv.append_message(conv.roles[0], prompt)
                 full_prompts.append(conv.to_openai_api_messages())
 
-            model_output = self.model.batched_generate(full_prompts,
+            model_output = self.model.batched_generate(
+                                                            full_prompts,
                                                             max_n_tokens = self.max_n_tokens,  
                                                             temperature = self.temperature,
                                                             top_p = self.top_p
                                                         )
+            for result,time_cost in model_output:
+
+                item ={}
+                item["idx"] = idx
+                item["model_output"] = result
+                item["time_cost"] = time_cost
+
+                formatted_result.append(item)
+
            
-        return model_output
+        return model_output,formatted_result

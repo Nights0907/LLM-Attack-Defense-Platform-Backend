@@ -2,6 +2,7 @@
 import os
 import json
 import argparse
+import time
 
 from app.models import AttackParameter
 # 引入 deepinception 的配置文件
@@ -18,7 +19,7 @@ def deep_inception(attack_parameter : AttackParameter):
     # Maximum number of generated tokens for the target
     target_max_n_tokens = 300
     # Experiment file name : ['main', 'abl_c', 'abl_layer', 'multi_scene', 'abl_fig6_4', 'further_q']
-    exp_name = "main"
+    exp_name = "main_test"
     # LLM defense: None, Self-Reminder, In-Context
     defense = "none"
 
@@ -47,8 +48,19 @@ def deep_inception(attack_parameter : AttackParameter):
         # Get target responses
         results[idx]['qA_pairs'] = []
         for question in questions:
+
+            start_time = time.time()
             target_response_list = targetLM.get_response(attack_parameter,question, defense)
-            results[idx]['qA_pairs'].append({'Q': question, 'A': target_response_list})
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+
+            results[idx]['qA_pairs'].append({
+                    "id" : idx,
+                    'Q': question,
+                    'A': target_response_list,
+                    "time_cost": elapsed_time
+                }
+            )
             print(target_response_list)
 
         del targetLM

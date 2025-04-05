@@ -1,5 +1,6 @@
+import json
+
 import openai
-import backoff
 import re
 from openai import OpenAI
 
@@ -39,7 +40,14 @@ def Moderation(input):
     return response
 
 def GPT_eval_score(model_name, text,temperature,retry_times,template_eval):
-    content = get_llm_responses(model_name,template_eval.format(text),temperature,retry_times)
+
+    message = template_eval.format(text).replace('"', ' ').replace("'", ' ')
+    messages = [{"role": "user", "content": message}]
+    print(messages)
+
+    content = get_llm_responses(model_name,messages,temperature,retry_times)
+    print(content)
+
     match = re.search(r'(\d+)', content)
     if match is None:
         return None

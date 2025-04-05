@@ -19,6 +19,9 @@ class Model(Enum):
     gemini = "gemini-pro"
     mixtral = "mixtral"
     qwen = "qwen-plus"
+    tencent = "hunyuan-turbos-latest"
+    baidu = "ernie-4.5-8k-preview"
+    deepseek = "deepseek-reasoner"
 
 MODEL_NAMES = [model.value for model in Model]
 
@@ -36,6 +39,9 @@ TOGETHER_MODEL_NAMES: dict[Model, str] = {
 }
 
 FASTCHAT_TEMPLATE_NAMES: dict[Model, str] = {
+    Model.tencent : "hunyuan-turbos-latest",
+    Model.baidu : "ernie-4.5-8k-preview",
+    Model.deepseek : "deepseek-reasoner",
     Model.qwen: "qwen-plus",
     Model.gpt_3_5: "gpt-3.5-turbo",
     Model.gpt_4: "gpt-4",

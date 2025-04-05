@@ -53,8 +53,6 @@ def codechameleon(attack_parameter : AttackParameter):
     prompt_style = "code"
     temperature = 0
 
-    print(attack_parameter.malicious_question_set)
-
     # 获取原始 prompts 模板
     prompts, original_queries = get_prompts(prompt_style, attack_parameter.malicious_question_set, encrypt_rule)
     # 包装成 大模型对话框架
@@ -66,12 +64,23 @@ def codechameleon(attack_parameter : AttackParameter):
 
     with tqdm(total=len(complete_prompts)) as pbar:
         for chat_prompt in complete_prompts:
+            start_time = time.time()
             index = index + 1
             model_output = get_llm_responses(attack_parameter.attack_model, chat_prompt, temperature,
                                              attack_parameter.retry_times)
             pbar.update(1)
-            results.append(model_output)
-            print(model_output)
+
+            item = {}
+            item['idx'] = index
+            item['attack_output'] = model_output
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            item['time_cost'] = elapsed_time
+
+            print(item)
+
+            results.append(item)
+
 
             if index % 20 == 0:
                 save_generation(attack_parameter, results, index)
