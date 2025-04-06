@@ -44,7 +44,7 @@ def attack():
     elif data['attack_method'] == "codechameleon" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/codechameleon/all_problem_test.csv"
     elif data['attack_method'] == "deepinception" and data["malicious_question_set"] == "advbench" :
-        malicious_question_set = "app/data/deepinception/data"
+        malicious_question_set = "app/data/deepinception/"
     elif data['attack_method'] == "jailbreakingllm" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/jailbreakingllm/all_problem_test.csv"
     elif data['attack_method'] == "sap" and data["malicious_question_set"] == "advbench" :
@@ -59,7 +59,8 @@ def attack():
         attack_method=data['attack_method'],
         malicious_question_set=malicious_question_set,
         attack_model=data['attack_model'],
-        retry_times=10
+        retry_times=10,
+        prompt = data['prompt']
     )
 
     # 这里可以添加数据库保存操作

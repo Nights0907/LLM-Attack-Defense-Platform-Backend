@@ -17,77 +17,54 @@ def set_config(model_generation_config, args):
 
     return generation_config
 
-# def open_source_attack(args):
-#     prompts, original_queries = get_prompts(args)
-#     complete_prompts = complete_format(args, prompts)
-#     if args.save_prompts==True:
-#         save_prompts(complete_prompts, args)
-#
-#     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
-#     tokenizer.pad_token = tokenizer.eos_token
-#     model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,device_map="auto")
-#
-#     model_generation_config = model.generation_config
-#     model_generation_config = set_config(model_generation_config, args)
-#
-#     results = []
-#     index = 0
-#     for iters in tqdm(range(len(complete_prompts))):
-#         index += 1
-#
-#         input_ids = tokenizer(complete_prompts[iters], return_tensors="pt").to('cuda')
-#         output = model.generate(**input_ids, generation_config=model_generation_config)
-#         prompt_len = input_ids['attention_mask'].shape[-1]
-#         result = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
-#         results.append(result)
-#
-#         if index % 50 == 0:
-#             save_generation(args,results, index)
-#     save_generation(args,results, index)
-
 
 def codechameleon(attack_parameter : AttackParameter):
 
-    # 配置攻击默认参数  :  攻击方式 : different encrypt methods
-    encrypt_rule = "binary_tree"
+    # 配置攻击默认参数  :
+    encrypt_rule = "binary_tree"  # 攻击方式
     prompt_style = "code"
     temperature = 0
 
     # 获取原始 prompts 模板
-    prompts, original_queries = get_prompts(prompt_style, attack_parameter.malicious_question_set, encrypt_rule)
+    prompts, original_queries = get_prompts(attack_parameter.prompt,prompt_style, attack_parameter.malicious_question_set, encrypt_rule)
     # 包装成 大模型对话框架
-    complete_prompts = complete_format(attack_parameter.attack_model, prompts)
+    complete_prompts,original_queries_list = complete_format(prompts, original_queries)
     # 获取攻击结果
 
     results = []
-    index = 0
+    idx = 0
 
     with tqdm(total=len(complete_prompts)) as pbar:
         for chat_prompt in complete_prompts:
+
+            # 保存原始有害问题
+            original_harm_behavior = original_queries_list[idx]
+
+            # 记录大模型问答消耗时间
             start_time = time.time()
-            index = index + 1
-            model_output = get_llm_responses(attack_parameter.attack_model, chat_prompt, temperature,
-                                             attack_parameter.retry_times)
+            idx = idx + 1
+            attack_output = get_llm_responses(attack_parameter.attack_model, chat_prompt, temperature,attack_parameter.retry_times)
             pbar.update(1)
 
             item = {}
-            item['idx'] = index
-            item['attack_output'] = model_output
             end_time = time.time()
             elapsed_time = end_time - start_time
-            item['time_cost'] = elapsed_time
 
-            print(item)
+            # 6个必要参数
+            item['idx'] = idx
+            item['original_harm_behavior'] = original_harm_behavior
+            item['attack_output'] = attack_output
+            item['time_cost'] = elapsed_time
 
             results.append(item)
 
-
-            if index % 20 == 0:
-                save_generation(attack_parameter, results, index)
+            # 每10次对话保存一次结果
+            if idx % 10 == 0:
+                save_generation(attack_parameter, results,idx)
 
             time.sleep(1)
 
     # 保存攻击结果
-    save_generation(attack_parameter, results, index)
+    save_generation(attack_parameter, results,idx)
 
     return results

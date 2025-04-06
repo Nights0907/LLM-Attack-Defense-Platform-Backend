@@ -8,12 +8,11 @@ import logging
 
 from app.models import AttackParameter
 from app.utils.renellm.llm_completion_utils import get_llm_responses
-from app.utils.sap.utils.openai_api import askChatGPT, GPT_eval_score
+from app.utils.sap.utils.openai_api import GPT_eval_score
 
 with open('./app/data/sap/data/initial_cases1.json', 'r', encoding="utf8") as file:
     cases = json.load(file)
     initial_cases_num = len(cases)
-   # print("initial cases loaded")
 
 with open('./app/data/sap/templates/in_context_learning.json', 'r', encoding="utf8") as file:
     template = json.load(file)[0]
@@ -65,28 +64,13 @@ def sap(attack_parameter : AttackParameter):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    logger = logging.getLogger('my_logger')
-    logger.setLevel(logging.DEBUG)
-
-    stream_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler(save_dir + 'info.log', mode='w')
-
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    stream_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
-
     while num_of_cases <= initial_cases_num:
-        logger.info("###########################")
-        logger.info(f"selected_topic:{selected_topic}")
-        logger.info(f"iteration:{num_of_iteration}")
-        logger.info(f"total cases:{num_of_cases}/{expected_cases}")
+        print("###########################")
+        print(f"selected_topic:{selected_topic}")
+        print(f"iteration:{num_of_iteration}")
+        print(f"total cases:{num_of_cases}/{expected_cases}")
 
         num_of_iteration += 1
-
-        start_time = time.time()
 
         prompt = template.format(*random.sample(cases, 3), random.choice(topic))
         messages = [{"role": "user", "content": prompt}]
@@ -97,7 +81,7 @@ def sap(attack_parameter : AttackParameter):
         match = re.search(r'###(.*?)###', output, re.DOTALL)
 
         if match is None:
-            logger.info('The returned result does not meet the requirements')
+            print('The returned result does not meet the requirements')
         else:
             content = match.group(1)
 
@@ -115,6 +99,7 @@ def sap(attack_parameter : AttackParameter):
 
             item = {}
             item["id"] = num_of_iteration
+            item["original_harm_behavior"] = prompt
             item["model_output"] = output2
             item["time_cost"] = pass_time
 
@@ -122,34 +107,38 @@ def sap(attack_parameter : AttackParameter):
                 num_of_cases += 1
                 cases.append(output)
                 GPT_output.append(item)
-                if num_of_cases % 10 == 0:
-                    with open(save_dir + 'generated_cases.json', 'w', encoding="utf8") as file:
-                        json.dump(
-                            cases[initial_cases_num:],
-                            file,
-                            ensure_ascii=False,
-                        )
+                # 每 10 轮保存一次
+                with open(save_dir + 'generated_cases.json', 'w', encoding="utf8") as file:
+                    json.dump(
+                        cases[initial_cases_num:],
+                        file,
+                        ensure_ascii=False,
+                    )
 
-                    with open(save_dir + 'gpt_output.json', 'w', encoding="utf8") as file:
-                        json.dump(
-                            GPT_output,
-                            file,
-                            ensure_ascii=False,
-                        )
+                with open(save_dir + 'gpt_output.json', 'w', encoding="utf8") as file:
+                    json.dump(
+                        GPT_output,
+                        file,
+                        ensure_ascii=False,
+                    )
+    # 存储所有结果
+    final_result = {}
 
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        logger.info("execution time:{:.2f}s\n".format(elapsed_time))
+    final_result['username'] = "zsx"
+    final_result['attack_method'] = attack_parameter.attack_method
+    final_result['attack_model'] = attack_parameter.attack_model
+    final_result['judge_model'] = attack_parameter.attack_model
 
-    with open(save_dir + 'generated_cases.json', 'w', encoding="utf8") as file:
-        json.dump(
-            cases[initial_cases_num:],
-            file,
-            ensure_ascii=False,
-        )
-    with open(save_dir + 'gpt_output.json', 'w', encoding="utf8") as file:
-        json.dump(
-            GPT_output,
-            file,
-            ensure_ascii=False,
-        )
+    if attack_parameter.prompt is None:
+        final_result['attack_dataset'] = \
+        os.path.splitext(os.path.basename(attack_parameter.malicious_question_set))[0]
+    else:
+        final_result['attack_question'] = attack_parameter.prompt
+    final_result['date'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    final_result['results'] = GPT_output
+
+    # 越狱攻击完成后保存所有数据
+    with open(save_dir, "w", encoding="utf-8") as f:
+        json.dump(final_result, f, ensure_ascii=False, indent=4)
+
+    return final_result

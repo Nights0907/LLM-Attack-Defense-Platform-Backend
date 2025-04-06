@@ -96,7 +96,6 @@ class AttackLM():
                                                             self.temperature,
                                                             attack_parameter.retry_times
                                                        )
-            
             # Check for valid outputs and update the list
             new_indices_to_regenerate = []
             for i, full_output in enumerate(outputs_list):
@@ -173,7 +172,7 @@ class TargetLM():
         self.model = load_indiv_model(model_name, evaluate_locally, use_jailbreakbench)            
         self.category = category
 
-    def get_response(self, attack_parameter : AttackParameter,prompts_list):
+    def get_response(self, attack_parameter : AttackParameter,prompts_list,goal,idx):
 
         formatted_result = []
 
@@ -192,7 +191,8 @@ class TargetLM():
             end_time = time.time()
             pass_time = end_time - start_time
             item = {}
-            item["idx"] = 0
+            item["idx"] = idx
+            item["original_harm_behavior"] = goal
             item["model_output"] = model_output
             item["time_cost"] = pass_time
 

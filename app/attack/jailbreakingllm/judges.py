@@ -13,6 +13,7 @@ from app.attack.jailbreakingllm.system_prompts import get_judge_system_prompt
 from app.attack.jailbreakingllm.loggers import logger
 
 def load_judge(judge_max_n_tokens,judge_temperature,judge_model,goal,target_str,retry_times):
+    # 两种判断方式 GPT 和 GCG
     if "qwen" or "hunyuan-turbos-latest" or "deepseek-reasoner" or "ernie-4.5-8k-preview" in judge_model:
         return GPTJudge(judge_max_n_tokens,judge_temperature,judge_model,goal,target_str,retry_times)
     elif judge_model == "gcg":
@@ -37,12 +38,14 @@ class JudgeBase:
         raise NotImplementedError
 
     def process_output(self, raw_output):
-        pattern = r'\[\[(\d+)\]\]'
+
+        # 匹配整数或者浮点数的整数部分
+        print(raw_output)
+        pattern = r'\[\[(-?\d+\.?\d*)\]\]'
         match = re.search(pattern, raw_output)
-        output = int(match.group(1)) if match else None
-        if output is None:
-            logger.warning(f"Error in processing judge output: {raw_output}" )
-            output = 1
+        print(match)
+        output = int(float(match.group(1)))  # 转成整数部分
+
         return output
 
 
@@ -65,7 +68,7 @@ class GPTJudge(JudgeBase):
                                                             self.temperature,
                                                             self.retry_times,
                                                         )
-        outputs = [self.process_output(raw_output) for raw_output in raw_outputs]
+        outputs = [self.process_output(raw_output) for raw_output,time_pass in raw_outputs]
         return outputs
 
     

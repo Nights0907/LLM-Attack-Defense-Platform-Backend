@@ -2,6 +2,7 @@ from app.models import AttackParameter
 from app.utils.deepinception import common
 from app.utils.deepinception.config import ( TARGET_TEMP, TARGET_TOP_P)
 from app.utils.deepinception.language_models import GPT
+from app.utils.renellm.llm_completion_utils import get_llm_responses
 
 
 def load_attack_and_target_models(args):
@@ -61,18 +62,28 @@ class TargetLM():
             conv.append_message(conv.roles[0], prompts_list)
             conv.append_message(conv.roles[1], None)
 
-        if 'qwen-plus' in self.model_name:
+        if 'qwen-plus' or "deepseek-reasoner" or "hunyuan-turbos-latest" or "ernie-4.5-8k-preview" in self.model_name:
             full_prompts = [conv.to_openai_api_messages()]
         else:
             full_prompts = conv.get_prompt()
 
-        outputs_list = self.model.batched_generate(attack_parameter.attack_model,
-                                                   full_prompts,
-                                                   self.temperature,
-                                                   attack_parameter.retry_times,
-                                                   )
+        if len(full_prompts) == 1:
+            attack_output = get_llm_responses(
+                                                       attack_parameter.attack_model,
+                                                       conv.to_openai_api_messages(),
+                                                       self.temperature,
+                                                       attack_parameter.retry_times,
+            )
+            return attack_output
+        else :
 
-        return outputs_list
+            outputs_list = self.model.batched_generate(attack_parameter.attack_model,
+                                                       full_prompts,
+                                                       self.temperature,
+                                                       attack_parameter.retry_times,
+                                                       )
+
+            return outputs_list
 
 
 def load_indiv_model(model_name, device=None):

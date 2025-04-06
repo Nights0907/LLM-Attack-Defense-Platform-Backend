@@ -8,7 +8,7 @@ import fire
 import os
 import logging
 
-from utils.openai_api import askChatGPT, GPT_eval_score
+from app.utils.sap.utils.openai_api import askChatGPT, GPT_eval_score
 
 
 with open('../../data/sap/templates/in_context_learning.json', 'r', encoding="utf8") as file:

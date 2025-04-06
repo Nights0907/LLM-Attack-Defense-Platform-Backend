@@ -7,7 +7,7 @@ import logging
 import fire
 
 from tqdm import tqdm
-from utils.openai_api import askChatGPT, GPT_eval_score, Moderation
+from app.utils.sap.utils.openai_api import askChatGPT, GPT_eval_score, Moderation
 
 
 #data_path: The name of the grandparent directory where the file is read and stored
