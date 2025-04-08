@@ -11,12 +11,10 @@ from .deepinception.deepinception import deep_inception
 from .jailbreakingllm.jailbreakingllm import jailbreakingllm
 from .renellm.renellm import renellm
 from .codechameleon.codechameleon import codechameleon
-from .sap.attack import sap
+from .sap.sap import sap
 
 # flask 数据库 所需包
-import os
 from app.models import AttackParameter
-from sqlalchemy import or_,and_
 from datetime import datetime
 
 # 获取 目标大模型 黑盒攻击结果
@@ -52,20 +50,16 @@ def attack():
 
 
     # 创建AttackRecord对象并赋值
-    attack_parameter = AttackParameter(
-        id=id,
-        time=formatted_time,
-        username=username,
-        attack_method=data['attack_method'],
-        malicious_question_set=malicious_question_set,
-        attack_model=data['attack_model'],
-        retry_times=10,
-        prompt = data['prompt']
-    )
+    attack_parameter = AttackParameter()
 
-    # 这里可以添加数据库保存操作
-    # db.session.add(attack_parameter)
-    # db.session.commit()
+    attack_parameter.id = id
+    attack_parameter.time = formatted_time
+    attack_parameter.username = username
+    attack_parameter.attack_method = data['attack_method']
+    attack_parameter.malicious_question_set = malicious_question_set
+    attack_parameter.attack_model = data['attack_model']
+    attack_parameter.retry_times = 10
+    attack_parameter.prompt = data['prompt']
 
     # 处理后端逻辑,目前可以选择五种攻击方法
     if data["attack_method"] == "renellm" :

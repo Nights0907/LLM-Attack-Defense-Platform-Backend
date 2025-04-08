@@ -7,7 +7,7 @@ from app.attack.jailbreakingllm.common import get_api_key, conv_template, extrac
 from app.attack.jailbreakingllm.language_models import GPT
 from app.attack.jailbreakingllm.config import FASTCHAT_TEMPLATE_NAMES, Model
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 
 
 def load_attack_and_target_models(attack_model,attack_max_n_tokens,max_n_attack_attempts,category,evaluate_locally,target_model,target_max_n_tokens,jailbreakbench_phase):
@@ -179,8 +179,8 @@ class TargetLM():
             user_input = prompts_list[0]
             user_message = {"role": "user", "content": user_input}
             messages = [user_message]
-            model_output = get_llm_responses(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
-            print(model_output)
+
+            model_output = get_llm_responses_stream(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
 
         else:
             batchsize = len(prompts_list)

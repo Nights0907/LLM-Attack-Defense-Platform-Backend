@@ -8,7 +8,7 @@ import torch
 from openai import OpenAI
 
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 
 
 class LanguageModel():
@@ -98,7 +98,7 @@ class GPT(LanguageModel):
         output = self.API_ERROR_OUTPUT
 
         for _ in range(self.API_MAX_RETRY):
-            output = get_llm_responses(attack_model,conv,temperature,retry_times)
+            output = get_llm_responses_stream(attack_model,conv,temperature,retry_times)
             break
 
 

@@ -2,7 +2,7 @@ from app.models import AttackParameter
 from app.utils.deepinception import common
 from app.utils.deepinception.config import ( TARGET_TEMP, TARGET_TOP_P)
 from app.utils.deepinception.language_models import GPT
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 
 
 def load_attack_and_target_models(args):
@@ -68,7 +68,7 @@ class TargetLM():
             full_prompts = conv.get_prompt()
 
         if len(full_prompts) == 1:
-            attack_output = get_llm_responses(
+            attack_output = get_llm_responses_stream(
                                                        attack_parameter.attack_model,
                                                        conv.to_openai_api_messages(),
                                                        self.temperature,

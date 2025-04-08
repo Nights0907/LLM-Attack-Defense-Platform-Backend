@@ -1,6 +1,8 @@
+import json
 import os
 import time
 import requests
+from flask import Response
 
 from openai import OpenAI
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
@@ -36,12 +38,14 @@ def get_llm_responses(model, messages, temperature, retry_times):
             api_key=tencent_api_key,
             base_url="https://api.hunyuan.cloud.tencent.com/v1"
         )
+
     # # 科大讯飞 星火 api
     # elif model == "lite" :
     #     client = OpenAI(
     #         api_key=spark_api_key,
     #         base_url="https://spark-api-open.xf-yun.com/v1/chat/completions"
     #     )
+
     # 百度 文心一言 api
     elif model == "ernie-4.5-8k-preview":
         model_output = get_baidu_response(model, messages)
@@ -52,37 +56,73 @@ def get_llm_responses(model, messages, temperature, retry_times):
         response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                temperature=temperature
+                temperature=temperature,
             )
 
         model_output = response.choices[0].message.content.strip()
         time.sleep(1)
-
         return model_output
 
     except Exception as e:
         print(e)
-        for retry_time in range(retry_times):
-            retry_time = retry_time + 1
-            print(f"{model} Retry {retry_time}")
-            time.sleep(1)
-            try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                )
-                break
-            except:
-                continue
 
-    # model_output = response.choices[0].message.content.strip()
-    # time.sleep(1)
-    #
-    # return model_output
+
+def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, stream=True):
+    """
+    获取大模型响应（支持流式传输/完整返回）
+
+    Args:
+        model: 模型名称（qwen-plus/deepseek-reasoner/...）
+        messages: 对话消息列表
+        temperature: 温度参数
+        retry_times: 错误重试次数
+        stream: 是否流式传输（True=流式，False=完整返回）
+    """
+    qwen_api_key = os.environ.get("QWEN_API_KEY")
+    deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY")
+    tencent_api_key = os.environ.get("TENCENT_API_KEY")
+
+    # 初始化客户端
+    if model == "qwen-plus":
+        client = OpenAI(api_key=qwen_api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+    elif model == "deepseek-reasoner":
+        client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
+    elif model == "hunyuan-turbos-latest":
+        client = OpenAI(api_key=tencent_api_key, base_url="https://api.hunyuan.cloud.tencent.com/v1")
+    elif model == "ernie-4.5-8k-preview":
+        return get_baidu_response(model, messages)  # 百度文心一言（单独处理）
+    else:
+        raise ValueError(f"Unsupported model: {model}")
+
+    # 重试逻辑
+    for attempt in range(retry_times):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                stream=stream  # 是否流式传输
+            )
+
+            if stream:
+                full_response = ""
+                print(f"[{model} 流式输出]:\n", end=" ", flush=True)
+                for chunk in response:
+                    content = chunk.choices[0].delta.content or ""
+                    print(content, end="", flush=True)  # 实时打印
+                    full_response += content
+                print()  # 换行
+                return full_response.strip()
+            else:
+                return response.choices[0].message.content.strip()
+
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            if attempt == retry_times - 1:
+                raise  # 最后一次重试仍失败则抛出异常
+            time.sleep(1)  # 延迟后重试
 
 # for baidu
-
 def get_baidu_access_token(api_key, secret_key):
     url = "https://aip.baidubce.com/oauth/2.0/token"
     params = {
@@ -123,7 +163,7 @@ def claudeCompletion(model, max_tokens, temperature, prompt, retry_times, round_
         client = Anthropic(
             base_url=base_url,
             auth_token=api_key
-            )   
+            )
     try:
         completion = client.completions.create(
             model=model,

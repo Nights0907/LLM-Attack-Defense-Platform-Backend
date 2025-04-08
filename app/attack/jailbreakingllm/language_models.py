@@ -13,7 +13,7 @@ from typing import Dict, List
 import openai
 
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 
 
 class LanguageModel():
@@ -166,7 +166,7 @@ class GPT(LanguageModel):
                  retry_times : int
                  ):
         start_time = time.time()
-        output = get_llm_responses(attack_model,conv,temperature,retry_times)
+        output = get_llm_responses_stream(attack_model,conv,temperature,retry_times)
         end_time = time.time()
         pass_time = end_time - start_time
 

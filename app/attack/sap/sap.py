@@ -1,16 +1,12 @@
-import copy
 import json
 import random
 import re
 import time
-import os
-import logging
 
-from app import mongo
 from app.models import AttackParameter
 from app.utils.renellm.data_utils import save_generation
-from app.utils.renellm.harmful_classification_utils import harmful_classification
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.harmful_classification_utils import harmful_classification, harmful_classification_by_sorry
+from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 from app.utils.sap.utils.openai_api import GPT_eval_score
 
 with open('./app/data/sap/data/initial_cases1.json', 'r', encoding="utf8") as file:
@@ -47,13 +43,15 @@ def sap(attack_parameter : AttackParameter):
 
     # 配置模型参数
     date_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    eval_method = "GPT"  # heuristic or GPT
     expected_cases = initial_cases_num
     attack_model = attack_parameter.attack_model
     selected_topic = "fraud"
     temperature = 0
     retry_times = attack_parameter.retry_times
     iter_max = 10
+    success_attack = 0
+    total_iters_times = 0
+    total_cost_times = 0
 
     results = []
 
@@ -68,6 +66,9 @@ def sap(attack_parameter : AttackParameter):
 
         while True:
 
+            # 记录 attack method 消耗时间
+            start_time = time.time()
+
             print(
                 "\n################################################################\n"
                 f"selected_topic:{selected_topic}\n"
@@ -78,12 +79,9 @@ def sap(attack_parameter : AttackParameter):
             prompt = template.format(*random.sample(cases, 3), random.choice(topic))
             messages = [{"role": "user", "content": prompt}]
 
-            # 记录 attack method 消耗时间
-            start_time = time.time()
             print(f"******* 开始对 {attack_parameter.attack_model} 进行第 {num_of_cases} 个提示词的越狱攻击! *******")
 
             output = get_llm_responses(attack_model, messages, temperature, retry_times)
-
             match = re.search(r'###(.*?)###', output, re.DOTALL)
 
             if match is None:
@@ -95,7 +93,7 @@ def sap(attack_parameter : AttackParameter):
                 messages = [user_message]
 
                 start_time = time.time()
-                attack_output = get_llm_responses(attack_model, messages, temperature, retry_times)
+                attack_output = get_llm_responses_stream(attack_model, messages, temperature, retry_times)
                 print('\n')
                 print(attack_output)
 
@@ -106,13 +104,17 @@ def sap(attack_parameter : AttackParameter):
                 # 进一步判断输出是否确实有害
                 print('\n')
                 print(f"******* 判断被攻击模型对嵌套的第 {num_of_cases} 个提示词的响应是否有害 *******")
-                jailbreak_label = harmful_classification(attack_parameter, attack_output)
+                # jailbreak_label = harmful_classification(attack_parameter, attack_output)
+                jailbreak_label = harmful_classification_by_sorry(attack_output)
 
-            else:  # 如果包含道歉内容
+            else:
+                # 如果包含道歉内容
                 if loop_count < iter_max:
                     # 未达最大迭代次数
                     print(f"\n第 {num_of_cases} 个提示词越狱失败!\n")
+                    total_iters_times += 1
                     continue
+
                 else:
                     # 已达最大迭代次数
                     print(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
@@ -127,6 +129,7 @@ def sap(attack_parameter : AttackParameter):
                     item['original_harm_behavior'] = prompt
                     item['attack_output'] = attack_output
                     item['time_cost'] = elapsed_time
+                    total_cost_times += elapsed_time
 
                     results.append(item)
                     break
@@ -144,7 +147,13 @@ def sap(attack_parameter : AttackParameter):
                 item['original_harm_behavior'] = prompt
                 item['attack_output'] = attack_output
                 item['time_cost'] = elapsed_time
+                total_cost_times += elapsed_time
+
                 results.append(item)
+
+                success_attack += 1
+                total_iters_times += 1
+
                 break
 
             else:
@@ -152,7 +161,9 @@ def sap(attack_parameter : AttackParameter):
                 if loop_count < iter_max:
                     # 未达最大迭代次数
                     print(f"\n第 {num_of_cases} 个提示词越狱失败!\n")
+                    total_iters_times += 1
                     continue
+
                 else:
                     # 已达最大迭代次数
                     print(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
@@ -166,7 +177,7 @@ def sap(attack_parameter : AttackParameter):
                     item['original_harm_behavior'] = prompt
                     item['attack_output'] = attack_output
                     item['time_cost'] = elapsed_time
-
+                    total_cost_times += elapsed_time
                     results.append(item)
                     break
 
@@ -174,8 +185,8 @@ def sap(attack_parameter : AttackParameter):
 
         # 每10次对话保存一次结果
         if num_of_cases % 10 == 0:
-            return_data = save_generation(date_time, attack_parameter, results)
+            return_data = save_generation(date_time, attack_parameter, results, success_attack,total_iters_times, total_cost_times)
 
-    return_data = save_generation(date_time, attack_parameter, results)
+    return_data = save_generation(date_time, attack_parameter, results, success_attack,total_iters_times, total_cost_times)
 
     return return_data

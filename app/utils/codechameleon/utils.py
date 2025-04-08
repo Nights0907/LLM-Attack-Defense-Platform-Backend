@@ -43,7 +43,7 @@ def get_queries(prompt,problem_path, encrypt_rule):
         return original_queries, encrypted_queries # list[str]
 
 
-def save_generation(date_time:str,attack_parameter: AttackParameter, results):
+def save_generation(date_time:str,attack_parameter: AttackParameter, results,success_attack:int,total_iters_times:int, total_cost_times:int):
 
     # 存储所有结果
     temp_result = {}
@@ -59,6 +59,8 @@ def save_generation(date_time:str,attack_parameter: AttackParameter, results):
         temp_result['attack_question'] = attack_parameter.prompt
     temp_result['date'] = date_time
     temp_result['attack_id'] = re.sub(r'\D', '', date_time)
+    temp_result['asr'] = 100 * (success_attack / total_iters_times)
+    temp_result['average_time_cost'] = 1000 * (success_attack / total_cost_times)
     temp_result['results'] = results
 
     # deepcopy
