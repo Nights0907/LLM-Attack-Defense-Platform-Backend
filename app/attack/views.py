@@ -3,6 +3,7 @@
 # flask框架 所需包
 from flask import render_template,request,session,redirect,url_for,abort,flash,json,jsonify
 from flask_login import login_required,current_user,login_user,logout_user
+from flask_pymongo import PyMongo
 
 # LLM attack 所需包
 from . import attack
@@ -14,11 +15,9 @@ from .sap.attack import sap
 
 # flask 数据库 所需包
 import os
-from app import db
 from app.models import AttackParameter
 from sqlalchemy import or_,and_
 from datetime import datetime
-
 
 # 获取 目标大模型 黑盒攻击结果
 @attack.route('/api/attack',methods=['GET','POST'])
@@ -38,6 +37,7 @@ def attack():
     username = data['username']
     id = username+'_'+formatted_time
 
+    global malicious_question_set, result
     # 根据攻击方法获得对应有害数据集
     if data['attack_method'] == "renellm" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/renellm/advbench/harmful_behaviors_test.csv"

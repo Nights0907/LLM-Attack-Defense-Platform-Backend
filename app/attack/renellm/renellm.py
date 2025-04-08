@@ -1,10 +1,13 @@
+import copy
+import re
 import time
 import json
 import os
 import random
 
+from app import mongo
 from app.models import AttackParameter
-from app.utils.renellm.data_utils import data_reader
+from app.utils.renellm.data_utils import data_reader, save_generation
 from app.utils.renellm.llm_completion_utils import get_llm_responses
 from app.utils.renellm.prompt_rewrite_utils import shortenSentence, misrewriteSentence, changeOrder, addChar, \
     languageMix, styleChange
@@ -13,6 +16,9 @@ from app.utils.renellm.harmful_classification_utils import harmful_classificatio
 
 
 def renellm(attack_parameter: AttackParameter):
+
+    date_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
     # 配置模型默认参数
     save_suffix = "normal"  # 保存文件后缀
     iter_max = 10  # 最大迭代次数
@@ -43,6 +49,7 @@ def renellm(attack_parameter: AttackParameter):
 
     # 存储最终输出信息
     data_list = []  # 用于收集所有攻击结果
+    global return_data
 
     # 遍历每个有害行为
     for idx, harm_behavior in enumerate(data):
@@ -50,27 +57,15 @@ def renellm(attack_parameter: AttackParameter):
         start_time = time.time()  # 记录开始时间
         original_harm_behavior = harm_behavior  # 保存原始有害行为
 
-        # 创建临时目录
-        if not os.path.exists('app/results/renellm/temp'):
-            os.makedirs('app/results/renellm/temp')
-
-        # 每处理10个样本保存一次临时数据
-        if idx != 0 and idx % 10 == 0:
-            file_name = f"app/results/renellm/temp/{save_suffix}_{idx}.json"
-            with open(file_name, "w", encoding="utf-8") as f:
-                json.dump(data_list, f, ensure_ascii=False, indent=4)
-            file_path = os.path.abspath(file_name)
-            print(f"\n临时文件已保存至: {file_path}\n")
-
         loop_count = 0  # 迭代计数器
 
         # 主循环
         while True:
             print(
-                "\n################################\n"
+                "\n################################################################\n"
                 f"当前数据: {idx + 1}/{len(data)}, {harm_behavior}\n"
                 f"当前迭代轮次: {loop_count + 1}/{iter_max}\n"
-                "################################\n")
+                "################################################################\n")
 
             # 提示词改写阶段
             while True:
@@ -155,14 +150,6 @@ def renellm(attack_parameter: AttackParameter):
                     item['attack_output'] = attack_output  # 攻击输出
                     item['time_cost'] = elapsed_time  # 耗时
 
-                    # 特定攻击方法的参数
-                    item['operation_functions'] = [operations[i].__name__ for i in operation_indexes]  # 使用的改写函数
-                    item['rewrite_model'] = attack_parameter.attack_model  # 改写模型
-                    item['rewrite_track'] = temp_rewrite_results  # 改写轨迹
-                    item['rewritten_prompt'] = harm_behavior  # 改写后的提示词
-                    item['nested_prompt'] = nested_prompt  # 嵌套后的提示词
-                    item['iteration_count'] = loop_count  # 迭代次数
-
                     data_list.append(item)  # 添加到结果列表
 
                     break
@@ -180,14 +167,6 @@ def renellm(attack_parameter: AttackParameter):
                 item['original_harm_behavior'] = original_harm_behavior
                 item['attack_output'] = attack_output
                 item['time_cost'] = elapsed_time
-
-                # 特定攻击方法的参数
-                item['operation_functions'] = [operations[i].__name__ for i in operation_indexes]
-                item['rewrite_model'] = attack_parameter.attack_model
-                item['rewrite_track'] = temp_rewrite_results
-                item['rewritten_prompt'] = harm_behavior
-                item['nested_prompt'] = nested_prompt
-                item['iteration_count'] = loop_count
 
                 data_list.append(item)
 
@@ -210,42 +189,15 @@ def renellm(attack_parameter: AttackParameter):
                     item['attack_output'] = attack_output
                     item['time_cost'] = elapsed_time
 
-                    # 特定攻击方法的参数
-                    item['operation_functions'] = [operations[i].__name__ for i in operation_indexes]
-                    item['rewrite_model'] = attack_parameter.attack_model
-                    item['rewrite_track'] = temp_rewrite_results
-                    item['rewritten_prompt'] = harm_behavior
-                    item['nested_prompt'] = nested_prompt
-                    item['iteration_count'] = loop_count
-
                     data_list.append(item)
 
                     break
 
-    # 存储所有结果
-    final_result = {}
-
-    final_result['username'] = "zsx"
-    final_result['attack_method'] = attack_parameter.attack_method
-    final_result['attack_model'] = attack_parameter.attack_model
-    final_result['judge_model'] = attack_parameter.attack_model
-
-    if attack_parameter.prompt is None:
-        final_result['attack_dataset'] = os.path.splitext(os.path.basename(attack_parameter.malicious_question_set))[0]
-    else :
-        final_result['attack_question'] = attack_parameter.prompt
-    final_result['date'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    final_result['results'] = data_list
+        # 每处理10个样本保存一次临时数据
+        if idx != 0 and idx % 10 == 0:
+            return_data = save_generation(date_time, attack_parameter, data_list)
 
 
-    # 越狱攻击完成后保存所有数据
-    if not os.path.exists('app/results/renellm/final'):
-        os.makedirs('app/results/renellm/final')
-    file_name = f"app/results/renellm/final/judge_by_{attack_parameter.attack_model}_attack_on_{attack_parameter.attack_model}_{save_suffix}.json"
+    return_data = save_generation(date_time, attack_parameter, data_list)
 
-    with open(file_name, "w", encoding="utf-8") as f:
-        json.dump(final_result, f, ensure_ascii=False, indent=4)
-
-    file_path = os.path.abspath(file_name)
-    print(f"\n最终文件已保存至:\n{file_path}\n")
-    return final_result
+    return return_data

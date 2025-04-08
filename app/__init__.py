@@ -1,11 +1,13 @@
 # -*— coding:utf-8 -*—
 from flask import Flask,url_for
+from flask_pymongo import PyMongo
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
 from config import config
 
 db = SQLAlchemy()
+mongo = PyMongo()  # 延迟初始化
 bootstrap = Bootstrap()
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
@@ -25,6 +27,9 @@ def create_app(config_name):
     db.init_app(app)
     db.app = app
     login_manager.init_app(app)
+
+    app.config["MONGO_URI"] = "mongodb://localhost:27017/llm_attack"
+    mongo.init_app(app) # initialization
 
     # 注册蓝图(导入包初始化模块__init__中的内容时，需要加‘.’)
     from .attack import attack as attack_bp

@@ -174,32 +174,15 @@ class TargetLM():
 
     def get_response(self, attack_parameter : AttackParameter,prompts_list,goal,idx):
 
-        formatted_result = []
-
         if self.use_jailbreakbench:
 
             user_input = prompts_list[0]
             user_message = {"role": "user", "content": user_input}
             messages = [user_message]
-
-            start_time = time.time()
-
             model_output = get_llm_responses(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
-
             print(model_output)
 
-            end_time = time.time()
-            pass_time = end_time - start_time
-            item = {}
-            item["idx"] = idx
-            item["original_harm_behavior"] = goal
-            item["model_output"] = model_output
-            item["time_cost"] = pass_time
-
-            formatted_result.append(item)
-
         else:
-            idx = 0
             batchsize = len(prompts_list)
             convs_list = [conv_template(self.template) for _ in range(batchsize)]
             full_prompts = []
@@ -213,14 +196,4 @@ class TargetLM():
                                                             temperature = self.temperature,
                                                             top_p = self.top_p
                                                         )
-            for result,time_cost in model_output:
-
-                item ={}
-                item["idx"] = idx
-                item["model_output"] = result
-                item["time_cost"] = time_cost
-
-                formatted_result.append(item)
-
-           
-        return model_output,formatted_result
+        return model_output
