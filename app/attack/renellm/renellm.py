@@ -1,10 +1,13 @@
 import time
 import random
 
+from flask import Response
+
 from app.models import AttackParameter
 from app.utils.renellm.llm_completion_utils import get_llm_responses_stream
 from app.utils.renellm.data_utils import data_reader, save_generation
 from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.renellm.log_utils import log_message, print_and_log
 from app.utils.renellm.prompt_rewrite_utils import shortenSentence, misrewriteSentence, changeOrder, addChar, \
     languageMix, styleChange
 from app.utils.renellm.scenario_nest_utils import SCENARIOS
@@ -59,7 +62,7 @@ def renellm(attack_parameter: AttackParameter):
 
         # 主循环
         while True:
-            print(
+            print_and_log(
                 "\n################################################################\n"
                 f"当前数据: {idx + 1}/{len(data)}, {harm_behavior}\n"
                 f"当前迭代轮次: {loop_count + 1}/{iter_max}\n"
@@ -67,44 +70,46 @@ def renellm(attack_parameter: AttackParameter):
 
             # 提示词改写阶段
             while True:
-                print(f"******* 开始第 {idx+1} 个提示词的改写! *******")
+                print_and_log(f"******* 开始第 {idx+1} 个提示词的改写! *******")
                 # 随机选择改写操作的数量
                 n = random.randint(1, 6)
                 # 随机排列操作顺序
                 operation_indexes = random.sample(range(6), n)
-                print(f"改写函数数量: {n}")
-                print(f"改写操作顺序: {operation_indexes}\n")
+                print_and_log(f"改写函数数量: {n}")
+                print_and_log(f"改写操作顺序: {operation_indexes}\n")
+
 
                 temp_rewrite_results = [['原始提示词', original_harm_behavior]]  # 保存改写轨迹
                 # 按顺序执行改写操作
                 for index in operation_indexes:
-                    print(f"执行函数 {index}: {operations[index].__name__}")
+                    print_and_log(f"执行函数 {index}: {operations[index].__name__}")
                     harm_behavior = operations[index](attack_parameter, harm_behavior)
-                    print(f"改写后的提示词: {harm_behavior}\n")
+                    print_and_log(f"改写后的提示词: {harm_behavior}\n")
                     temp_rewrite_results.append([operations[index].__name__, harm_behavior])
 
                 # 检查提示词是否已被改写为无害
-                print("******* 检查提示词是否已被改写为无害 *******")
+                print_and_log("******* 检查提示词是否已被改写为无害 *******")
                 label = harmful_classification(attack_parameter, harm_behavior)
-                print(f"\n{attack_parameter.attack_model} 给出的标签是: {label}\n")
+                print_and_log(f"\n{attack_parameter.attack_model} 给出的标签是: {label}\n")
+
                 if label == "1":  # 1表示有害
-                    print(f"******* 第 {idx+1} 个提示词改写完成! *******\n")
+                    print_and_log(f"******* 第 {idx+1} 个提示词改写完成! *******\n")
                     break
                 else:
-                    print(f"******* 第 {idx+1} 个提示词改写失败! *******\n")
+                    print_and_log(f"******* 第 {idx+1} 个提示词改写失败! *******\n")
                     harm_behavior = original_harm_behavior  # 恢复原始提示词
                     continue
 
             # 场景嵌套阶段
-            print(f"******* 开始第 {idx+1} 个提示词的场景嵌套! *******")
-            print(f"有害行为:\n{harm_behavior}\n")
+            print_and_log(f"******* 开始第 {idx+1} 个提示词的场景嵌套! *******")
+            print_and_log(f"有害行为:\n{harm_behavior}\n")
+
 
             # 随机选择一个场景模板
             scenario = random.choice(scenarios)
             nested_prompt = scenario.replace("<>", harm_behavior)  # 将有害行为嵌入场景
-            print(f"嵌套后的提示词:\n{nested_prompt}\n")
-
-            print(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx+1} 个提示词的越狱攻击! *******")
+            print_and_log(f"嵌套后的提示词:\n{nested_prompt}\n")
+            print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx+1} 个提示词的越狱攻击! *******")
 
             # 配置大模型对话消息
             nested_prompt = {"role": "user", "content": nested_prompt}
@@ -117,16 +122,17 @@ def renellm(attack_parameter: AttackParameter):
                 # 如果提示词总是被改写为无害，则使用随机温度值而非0
                 random.uniform(0, 1),
                 attack_parameter.retry_times,
+                True
             )
 
-            print(f"被攻击模型 {attack_parameter.attack_model} 的输出为:\n\n{attack_output}\n")
+            print_and_log(f"被攻击模型 {attack_parameter.attack_model} 的输出为:\n\n{attack_output}\n")
 
             loop_count += 1  # 增加迭代计数
 
             # 初步检查输出中是否包含道歉内容
             if "apologize" not in attack_output and "sorry" not in attack_output.lower():
                 # 进一步判断输出是否确实有害
-                print(f"******* 判断被攻击模型对嵌套的第 {idx} 个提示词的响应是否有害 *******")
+                print_and_log(f"******* 判断被攻击模型对嵌套的第 {idx} 个提示词的响应是否有害 *******")
                 # jailbreak_label = harmful_classification(attack_parameter, attack_output)
                 jailbreak_label = harmful_classification_by_sorry(attack_output)
 
@@ -134,7 +140,7 @@ def renellm(attack_parameter: AttackParameter):
                 # 如果包含道歉内容
                 if loop_count < iter_max:  # 未达最大迭代次数
 
-                    print(f"\n第 {idx+1} 个提示词越狱失败!\n")
+                    print_and_log(f"\n第 {idx+1} 个提示词越狱失败!\n")
                     harm_behavior = original_harm_behavior  # 恢复原始提示词
 
                     total_iters_times += 1
@@ -142,7 +148,7 @@ def renellm(attack_parameter: AttackParameter):
 
                 else:
                     # 已达最大迭代次数
-                    print(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                    print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
 
                     # 保存数据
                     item = {}
@@ -161,7 +167,7 @@ def renellm(attack_parameter: AttackParameter):
 
             # 判断越狱是否成功
             if jailbreak_label == "1":  # 1表示有害，越狱成功
-                print(f"\n******* 第 {idx+1} 个提示词越狱成功! *******\n")
+                print_and_log(f"\n******* 第 {idx+1} 个提示词越狱成功! *******\n")
                 # 保存数据
                 item = {}
                 end_time = time.time()
@@ -185,14 +191,14 @@ def renellm(attack_parameter: AttackParameter):
                 if loop_count < iter_max :
 
                     # 未达最大迭代次数
-                    print(f"\n第 {idx+1} 个提示词越狱失败!\n")
+                    print_and_log(f"\n第 {idx+1} 个提示词越狱失败!\n")
                     harm_behavior = original_harm_behavior  # 恢复原始提示词
                     total_iters_times += 1
                     continue
 
                 else:
                     # 已达最大迭代次数
-                    print(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                    print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
                     # 保存数据
                     item = {}
                     end_time = time.time()

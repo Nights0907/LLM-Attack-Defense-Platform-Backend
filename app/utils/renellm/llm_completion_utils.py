@@ -1,11 +1,12 @@
-import json
 import os
 import time
 import requests
-from flask import Response
 
 from openai import OpenAI
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+
+from app.utils.renellm.log_utils import log_message, print_and_log
+
 
 # for gpt
 def get_llm_responses(model, messages, temperature, retry_times):
@@ -67,6 +68,9 @@ def get_llm_responses(model, messages, temperature, retry_times):
         print(e)
 
 
+
+
+
 def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, stream=True):
     """
     获取大模型响应（支持流式传输/完整返回）
@@ -109,15 +113,16 @@ def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, st
                 print(f"[{model} 流式输出]:\n", end=" ", flush=True)
                 for chunk in response:
                     content = chunk.choices[0].delta.content or ""
+                    log_message(content,True)
                     print(content, end="", flush=True)  # 实时打印
                     full_response += content
-                print()  # 换行
+                print_and_log('\n')
                 return full_response.strip()
             else:
                 return response.choices[0].message.content.strip()
 
         except Exception as e:
-            print(f"Attempt {attempt + 1} failed: {e}")
+            print_and_log(f"Attempt {attempt + 1} failed: {e}")
             if attempt == retry_times - 1:
                 raise  # 最后一次重试仍失败则抛出异常
             time.sleep(1)  # 延迟后重试

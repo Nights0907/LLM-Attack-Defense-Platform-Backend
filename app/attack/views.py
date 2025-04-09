@@ -1,9 +1,7 @@
 # -*— coding:utf-8 -*—
 
 # flask框架 所需包
-from flask import render_template,request,session,redirect,url_for,abort,flash,json,jsonify
-from flask_login import login_required,current_user,login_user,logout_user
-from flask_pymongo import PyMongo
+from flask import render_template, request, session, redirect, url_for, abort, flash, json, jsonify, Response
 
 # LLM attack 所需包
 from . import attack
@@ -74,4 +72,19 @@ def attack():
         result = sap(attack_parameter)
 
     return jsonify(result)
+
+# @attack.route('/',methods=['GET','POST'])
+# def index():
+#     return render_template('index.html')
+#
+# @attack.route('/logs',methods=['GET','POST'])
+# def logs():
+#     return Response(generate_logs(), content_type='text/event-stream')
+#
+# @attack.route('/start-logging', methods=['GET'])
+# def start_logging():
+#
+#     # 返回日志流
+#     return Response(generate_logs(), content_type='text/event-stream')
+
 

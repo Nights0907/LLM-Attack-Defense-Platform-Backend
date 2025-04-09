@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时日志</title>
+    <style>
+        #log {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>日志实时更新</h1>
+    <button id="generate-log">生成日志</button>
+    <div id="log"></div>
+
+    <script>
+        const logContainer = document.getElementById('log');
+
+        // 使用EventSource来实时获取日志
+        const eventSource = new EventSource('/logs');
+
+        // 当收到日志数据时，更新页面内容
+        eventSource.onmessage = function(event) {
+            logContainer.innerHTML += event.data ;
+        };
+
+        // 手动触发日志生成
+        document.getElementById('generate-log').addEventListener('click', function() {
+            fetch('/start-logging');  // 向后端请求生成日志
+        });
+    </script>
+</body>
+</html>

@@ -31908,7 +31908,7 @@
      * named as 'value'.
      *
      * @param {Array.<string>} sysDims Necessary dimensions, like ['x', 'y'], which
-     *      provides not only dim template, but also default order.
+     *      provides not only dim templates, but also default order.
      *      properties: 'name', 'type', 'displayName'.
      *      `name` of each item provides default coord name.
      *      [{dimsDef: [string|Object, ...]}, ...] dimsDef of sysDim item provides default dim name, and

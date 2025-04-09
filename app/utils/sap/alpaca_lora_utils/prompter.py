@@ -22,7 +22,7 @@ class Prompter(object):
             self.template = json.load(fp)
         if self._verbose:
             print(
-                f"Using prompt template {template_name}: {self.template['description']}"
+                f"Using prompt templates {template_name}: {self.template['description']}"
             )
 
     def generate_prompt(

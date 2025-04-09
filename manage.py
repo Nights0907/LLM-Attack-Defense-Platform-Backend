@@ -11,12 +11,6 @@ migrate = Migrate(app,db)
 manager = Manager(app)
 
 
-# 建表，删除表，首次部署时执行（调试过程中不要执行，否则数据将全部删除）
-# db.drop_all()
-# db.create_all()
-
-
-
 
 
 

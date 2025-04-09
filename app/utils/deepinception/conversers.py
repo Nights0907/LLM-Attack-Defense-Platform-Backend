@@ -95,14 +95,14 @@ def get_model_path_and_template(model_name):
     full_model_dict = {
         "gpt-4": {
             "path": "gpt-4",
-            "template": "gpt-4"
+            "templates": "gpt-4"
         },
         "qwen-plus": {
             "path": "qwen-plus",
-            "template": "qwen-plus"
+            "templates": "qwen-plus"
         }
     }
-    path, template = full_model_dict[model_name]["path"], full_model_dict[model_name]["template"]
+    path, template = full_model_dict[model_name]["path"], full_model_dict[model_name]["templates"]
     return path, template
 
 
