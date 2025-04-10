@@ -12,13 +12,9 @@ from ..utils.renellm.log_utils import generate_logs
 def _index():
     return render_template('index.html')
 
-@logs.route('/logs',methods=['GET','POST'])
-def _logs():
-    return Response(generate_logs(), content_type='text/event-stream')
-
-@logging.route('/start-logging', methods=['GET'])
-def start_logging():
-    # 返回日志流
-    return Response(generate_logs(), content_type='text/event-stream')
-
-
+@logs.route('/logs')
+def stream_logs():
+    response = Response(generate_logs(), mimetype="text/event-stream")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    return response

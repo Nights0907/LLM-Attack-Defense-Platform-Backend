@@ -7,7 +7,7 @@ from app.utils.codechameleon.utils import complete_format
 from app.attack.codechameleon.template import get_prompts
 from app.utils.renellm.harmful_classification_utils import harmful_classification, harmful_classification_by_sorry
 from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
-from app.utils.renellm.log_utils import print_and_log
+from app.utils.renellm.log_utils import print_and_log, log_message
 
 
 def set_config(model_generation_config, args):

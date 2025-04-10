@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -14,49 +15,77 @@ logging.basicConfig(level=logging.INFO)  # 设置日志级别
 
 # 记录日志的方法
 def print_and_log(content):
-    print(content)
-    log_message(content,False)
+    log_message(content)
+    # print(content, flush=True)
 
-def log_message(content, is_stream=False):
-    """
-    记录日志。根据 is_stream 决定是否换行。
-    is_stream=True 表示流式输出，不换行
-    """
+
+def log_message(content,is_stream = True):
+
     file_stream = file_handler.stream
-    # 如果是流式输出，不加换行符
     if is_stream:
         file_stream.write(content)  # 写入到文件，不换行
     else:
-        file_stream.write(content + '\n')  # 普通日志，添加换行符
+        file_stream.write(content)  # 写入到文件，不换行
     file_stream.flush()  # 强制刷新流
 
-# 实时返回日志流
+
+import os
+import time
+
+#
+# def generate_logs():
+#     file_path = 'app.log'
+#
+#     # 初始定位到文件末尾（只读最新内容）
+#     with open(file_path, 'r') as f:
+#         f.seek(0, os.SEEK_END)
+#         last_position = f.tell()
+#
+#     while True:
+#         try:
+#             with open(file_path, 'r') as f:
+#                 f.seek(last_position)
+#                 while True:
+#                     char = f.read(1)  # 逐字读取
+#                     if not char:  # 无新内容
+#                         break
+#                     yield f"data: {char}\n\n"  # 每个字符作为独立事件推送
+#                     last_position = f.tell()
+#             time.sleep(0.001)  # 极短的间隔（1ms）
+#         except Exception as e:
+#             yield f"data: Error: {str(e)}\n\n"
 
 def generate_logs():
-    """实时监控文件变化（包括行内更新）"""
     file_path = 'app.log'
-    last_size = 0
-    last_position = 0
+
+    # 初始定位到文件末尾（只读最新内容）
+    with open(file_path, 'r') as f:
+        f.seek(0, os.SEEK_END)
+        last_position = f.tell()
 
     while True:
-        current_size = os.path.getsize(file_path)
-        # 文件大小发生变化（新增内容或被覆盖）
-        if current_size != last_size:
+        try:
             with open(file_path, 'r') as f:
-                # 定位到上次读取位置
-                if current_size >= last_size:  # 文件增大（追加模式）
-                    f.seek(last_position)
-                    new_content = f.read()
+                f.seek(last_position)
+                special_char = "ENTER"
+                prev_char = None
+
+                while True:
+                    char = f.read(1)  # 逐字读取
+                    if not char:  # 无新内容
+                        break
+                    if char == '\n':
+                        yield f"data: {special_char}\n\n"
+                    else:
+                        yield f"data: {char}\n\n"
+
                     last_position = f.tell()
-                else:  # 文件变小（被清空或覆盖）
-                    f.seek(0)
-                    new_content = f.read()
-                    last_position = len(new_content)
-                if new_content:
-                    yield f"data: {new_content}\n\n"
-            last_size = current_size
-        else:
-            yield ":heartbeat:\n\n"  # 保持连接的心跳包
 
-        time.sleep(0.1)  # 检测间隔
+                # 处理文件末尾可能剩余的\r
+                if prev_char:
+                    yield f"data: {prev_char}\n\n"
 
+            time.sleep(0.001)  # 极短的间隔（1ms）
+
+        except Exception as e:
+            yield f"data: Error: {str(e)}\n\n"
