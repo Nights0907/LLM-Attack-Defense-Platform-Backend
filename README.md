@@ -23,25 +23,21 @@ git clone https://github.com/Nights0907/LLMAttack-main.git
 cd LLMAttack-main
 
 # 创建虚拟环境
-conda create -n llmattack python=3.9 -y
-conda activate llmattack
+conda create -n llm-attack python=3.9 -y
+conda activate llm-attack
 
 # 安装依赖
 pip install -r requirements.txt
-```
 
-### 服务部署
+# 配置mysql和mongo数据库
+    1. 本地开启mysql和mongodb服务
+        (1) 配置mongodb参考: https://blog.csdn.net/X_xxxx7/article/details/142589242
+        (2) 配置mysql数据库直接运行项目根目录下的 attack_llm.sql 文件
+    2. 在app/__init__.py中更改自己的数据库信息
+        # 配置mysql
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/llm_attack'
+        # 配置mongodb
+        app.config["MONGO_URI"] = "mongodb://localhost:27017/llm_attack"
 ```bash
-# 数据库迁移
-python manage.py migrate
 
-# 启动开发服务器
-python manage.py runserver 0.0.0.0:8000
-
-### 接口访问（目前还没写）
-- 🌐 **API文档**：`http://localhost:8000/docs`
-- 📈 **监控面板**：`http://localhost:8000/admin`
-- ⚙️ **评估控制台**：`http://localhost:8000/console`
-
-> 💡 提示：建议部署前仔细阅读《安全部署指南》并配置防火墙规则，实验环境请勿使用生产模型参数。
 ```
