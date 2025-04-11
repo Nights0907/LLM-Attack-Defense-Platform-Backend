@@ -1,44 +1,30 @@
+from app.models import model_info
+
 import os
 import time
 import requests
 
 from openai import OpenAI
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-
 from app.utils.renellm.log_utils import log_message, print_and_log
 
+
+def get_model_info(model_name:str):
+    curr_model = model_info.query.filter_by(model_name=model_name).first()
+    return curr_model.base_url,curr_model.api_key
 
 # for gpt
 def get_llm_responses(model, messages, temperature, retry_times):
 
-    qwen_api_key = os.environ.get("QWEN_API_KEY")
-    deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY")
-    tencent_api_key = os.environ.get("TENCENT_API_KEY")
+    base_url,api_keys = get_model_info(model)
 
-    # 默认调用
+    print("base_url : "+base_url)
+    print("api_keys : " + api_keys)
+
     client = OpenAI(
-        api_key=qwen_api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        api_key=api_keys,
+        base_url=base_url
     )
-
-    # 阿里 通义千问 api
-    if model == "qwen-plus":
-        client = OpenAI(
-            api_key=qwen_api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
-    # deepseek 深度求索 api
-    elif model == "deepseek-reasoner":
-        client = OpenAI(
-            api_key=deepseek_api_key,
-            base_url="https://api.deepseek.com"
-        )
-    # 腾讯 混元 api
-    elif model == "hunyuan-turbos-latest":
-        client = OpenAI(
-            api_key=tencent_api_key,
-            base_url="https://api.hunyuan.cloud.tencent.com/v1"
-        )
 
     # # 科大讯飞 星火 api
     # elif model == "lite" :
@@ -47,10 +33,10 @@ def get_llm_responses(model, messages, temperature, retry_times):
     #         base_url="https://spark-api-open.xf-yun.com/v1/chat/completions"
     #     )
 
-    # 百度 文心一言 api
-    elif model == "ernie-4.5-8k-preview":
-        model_output = get_baidu_response(model, messages)
-        return model_output
+    # # 百度 文心一言 api
+    # elif model == "ernie-4.5-8k-preview":
+    #     model_output = get_baidu_response(model, messages)
+    #     return model_output
 
 
     try:
@@ -68,9 +54,6 @@ def get_llm_responses(model, messages, temperature, retry_times):
         print(e)
 
 
-
-
-
 def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, stream=True):
     """
     获取大模型响应（支持流式传输/完整返回）
@@ -82,21 +65,15 @@ def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, st
         retry_times: 错误重试次数
         stream: 是否流式传输（True=流式，False=完整返回）
     """
-    qwen_api_key = os.environ.get("QWEN_API_KEY")
-    deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY")
-    tencent_api_key = os.environ.get("TENCENT_API_KEY")
+    base_url, api_key = get_model_info(model)
 
-    # 初始化客户端
-    if model == "qwen-plus":
-        client = OpenAI(api_key=qwen_api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
-    elif model == "deepseek-reasoner":
-        client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
-    elif model == "hunyuan-turbos-latest":
-        client = OpenAI(api_key=tencent_api_key, base_url="https://api.hunyuan.cloud.tencent.com/v1")
-    elif model == "ernie-4.5-8k-preview":
-        return get_baidu_response(model, messages)  # 百度文心一言（单独处理）
-    else:
-        raise ValueError(f"Unsupported model: {model}")
+    # print("base_url : " + base_url)
+    # print("api_key : " + api_key)
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url=base_url
+    )
 
     # 重试逻辑
     for attempt in range(retry_times):
@@ -113,7 +90,7 @@ def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, st
                 print(f"[{model} 流式输出]:\n", end=" ", flush=True)
                 for chunk in response:
                     content = chunk.choices[0].delta.content or ""
-                    log_message(content,True)
+                    log_message(content)
                     print(content, end="", flush=True)  # 实时打印
                     full_response += content
                 print_and_log('\n')
@@ -153,7 +130,7 @@ def get_baidu_response(attack_model,prompt):
     payload = {
         "model": attack_model,
         "messages": prompt,
-        "temperature": 0.5
+        "temperature": 0.5,
     }
     response = requests.post(url, params=params, headers=headers, json=payload).json()
     return response["result"]

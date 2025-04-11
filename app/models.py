@@ -4,7 +4,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db
-# ,login_manager
+
 
 class AttackParameter(db.Model):
     __tablename__ = 'attack_records'
@@ -26,6 +26,20 @@ class AttackParameter(db.Model):
     retry_times = db.Column(db.Integer, nullable=True, default=10)
     # prompt 加载默认问题
     prompt = db.Column(db.String(80), index=True)
+
+# 定义数据模型（ORM）
+class user_info(db.Model):
+    uid = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), unique=True, nullable=False)
+    is_login = db.Column(db.SmallInteger, default=0, nullable=False)  # 使用 TINYINT
+
+class model_info(db.Model):
+    model_id = db.Column(db.Integer, primary_key=True)
+    base_url= db.Column(db.String(255), unique=True, nullable=False)
+    model_name = db.Column(db.String(255), unique=True, nullable=False)
+    api_key = db.Column(db.String(255), unique=True, nullable=False)
+
 
 
 

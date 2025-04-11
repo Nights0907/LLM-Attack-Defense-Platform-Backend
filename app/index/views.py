@@ -1,10 +1,6 @@
 # -*— coding:utf-8 -*—
-
-# flask框架 所需包
-from flask import render_template,Response
-
-# LLM attack 所需包
-from . import index, logs ,logging
+from flask import render_template, Response, request, jsonify
+from . import index, logs
 from ..utils.renellm.log_utils import generate_logs
 
 

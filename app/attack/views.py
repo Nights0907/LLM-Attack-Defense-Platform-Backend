@@ -1,5 +1,5 @@
 # -*— coding:utf-8 -*—
-
+from bson import json_util
 # flask框架 所需包
 from flask import render_template, request, session, redirect, url_for, abort, flash, json, jsonify, Response
 
@@ -15,10 +15,13 @@ from .sap.sap import sap
 from app.models import AttackParameter
 from datetime import datetime
 
+from .. import mongo
+
+
 # 获取 目标大模型 黑盒攻击结果
 @attack.route('/api/attack',methods=['GET','POST'])
 # @login_required 暂时不需要用户登录
-def attack():
+def _attack():
     # 获取前端发送的JSON数据
     data = request.get_json()
 
@@ -73,18 +76,33 @@ def attack():
 
     return jsonify(result)
 
-# @attack.route('/',methods=['GET','POST'])
-# def index():
-#     return render_template('index.html')
-#
-# @attack.route('/logs',methods=['GET','POST'])
-# def logs():
-#     return Response(generate_logs(), content_type='text/event-stream')
-#
-# @attack.route('/start-logging', methods=['GET'])
-# def start_logging():
-#
-#     # 返回日志流
-#     return Response(generate_logs(), content_type='text/event-stream')
 
+# 获取用户历史记录
+@attack.route('/api/history',methods=['GET','POST'])
+# @login_required 暂时不需要用户登录
+def get_history_by_username():
+    data = request.get_json()
+    username = data["username"]
 
+    attack_results_collection = mongo.db.attack_results
+    attack_results_documents = list(attack_results_collection.find(
+        {"username": username},
+        {"results": 0}
+    ))
+
+    return_data = json_util.dumps(attack_results_documents)
+    return return_data
+
+@attack.route('/api/history/details',methods=['GET','POST'])
+# @login_required 暂时不需要用户登录
+def get_history_details_by_attack_id():
+    data = request.get_json()
+    attack_id = data["attack_id"]
+
+    attack_results_collection = mongo.db.attack_results
+    attack_results_document = attack_results_collection.find_one(
+        {"attack_id": attack_id},
+    )
+
+    return_data = json_util.dumps(attack_results_document)
+    return return_data
