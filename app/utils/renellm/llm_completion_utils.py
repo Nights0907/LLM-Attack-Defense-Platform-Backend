@@ -18,8 +18,8 @@ def get_llm_responses(model, messages, temperature, retry_times):
 
     base_url,api_keys = get_model_info(model)
 
-    print("base_url : "+base_url)
-    print("api_keys : " + api_keys)
+    # print("base_url : "+base_url)
+    # print("api_keys : " + api_keys)
 
     client = OpenAI(
         api_key=api_keys,

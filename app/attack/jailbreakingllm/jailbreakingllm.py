@@ -88,7 +88,7 @@ def jailbreakingllm(attack_parameter : AttackParameter):
             adv_prompt_list = [attack["prompt"] for attack in extracted_attack_list]
 
             # Get target responses
-            print_and_log(f"\n******* 开始对 {attack_parameter.attack_model} 进行第 {1} 个提示词的越狱攻击! *******\n")
+            print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {1} 个提示词的越狱攻击! *******\n")
             attack_output = targetLM.get_response(attack_parameter, adv_prompt_list,goal,0)
             print_and_log(attack_output)
 
@@ -97,8 +97,7 @@ def jailbreakingllm(attack_parameter : AttackParameter):
             # 初步检查输出中是否包含道歉内容
             if "apologize" not in attack_output.lower() and "sorry" not in attack_output.lower():
                 # 进一步判断输出是否确实有害
-                print_and_log('\n')
-                print_and_log(f"\n******* 判断被攻击模型对嵌套的第 {1} 个提示词的响应是否有害 *******\n")
+                print_and_log(f"******* 判断被攻击模型对嵌套的第 {1} 个提示词的响应是否有害 *******\n")
                 # jailbreak_label = harmful_classification(attack_parameter, attack_output)
                 jailbreak_label = harmful_classification_by_sorry(attack_output)
 
@@ -106,13 +105,13 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                 # 如果包含道歉内容
                 if loop_count < iter_max:
                     # 未达最大迭代次数
-                    print_and_log(f"\n第 {1} 个提示词越狱失败!\n")
+                    print_and_log(f"第 {1} 个提示词越狱失败!\n")
                     total_iters_times += 1
                     continue
 
                 else:
                     # 已达最大迭代次数
-                    print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                    print_and_log(f"******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
 
                     # 保存数据
                     item = {}
@@ -131,7 +130,7 @@ def jailbreakingllm(attack_parameter : AttackParameter):
 
             # 判断越狱是否成功
             if jailbreak_label == "1":  # 1表示有害，越狱成功
-                print_and_log(f"\n******* 第 {1} 个提示词越狱成功! *******\n")
+                print_and_log(f"******* 第 {1} 个提示词越狱成功! *******\n")
                 # 保存数据
                 item = {}
                 end_time = time.time()
@@ -155,13 +154,13 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                 # 越狱失败
                 if loop_count < iter_max:
                     # 未达最大迭代次数
-                    print_and_log(f"\n第 {1} 个提示词越狱失败!\n")
+                    print_and_log(f"第 {1} 个提示词越狱失败!\n")
                     total_iters_times += 1
                     continue
 
                 else:
                     # 已达最大迭代次数
-                    print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                    print_and_log(f"******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
                     # 保存数据
                     item = {}
                     end_time = time.time()
@@ -205,9 +204,8 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                 extracted_attack_list = attackLM.get_attack(attack_parameter, convs_list, processed_response_list)
                 adv_prompt_list = [attack["prompt"] for attack in extracted_attack_list]
 
-                print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx + 1} 个提示词的越狱攻击! *******")
+                print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx + 1} 个提示词的越狱攻击! *******\n")
                 attack_output = targetLM.get_response(attack_parameter, adv_prompt_list,goal,idx)
-                print_and_log('\n')
                 print_and_log(attack_output)
 
                 loop_count += 1  # 增加迭代计数
@@ -215,7 +213,6 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                 # 初步检查输出中是否包含道歉内容
                 if "apologize" not in attack_output.lower() and "sorry" not in attack_output.lower():
                     # 进一步判断输出是否确实有害
-                    print_and_log('\n')
                     print_and_log(f"******* 判断被攻击模型对嵌套的第 {idx + 1} 个提示词的响应是否有害 *******")
                     # jailbreak_label = harmful_classification(attack_parameter, attack_output)
                     jailbreak_label = harmful_classification_by_sorry(attack_output)
@@ -224,13 +221,13 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                     # 如果包含道歉内容
                     if loop_count < iter_max:
                         # 未达最大迭代次数
-                        print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
+                        print_and_log(f"第 {idx + 1} 个提示词越狱失败!\n")
                         total_iters_times += 1
                         continue
 
                     else:
                         # 已达最大迭代次数
-                        print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                        print_and_log(f"******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
 
                         # 保存数据
                         item = {}
@@ -249,7 +246,7 @@ def jailbreakingllm(attack_parameter : AttackParameter):
 
                 # 判断越狱是否成功
                 if jailbreak_label == "1":  # 1表示有害，越狱成功
-                    print_and_log(f"\n******* 第 {idx + 1} 个提示词越狱成功! *******\n")
+                    print_and_log(f"******* 第 {idx + 1} 个提示词越狱成功! *******\n")
                     # 保存数据
                     item = {}
                     end_time = time.time()
@@ -273,11 +270,11 @@ def jailbreakingllm(attack_parameter : AttackParameter):
                     # 越狱失败
                     if loop_count < iter_max:
                         # 未达最大迭代次数
-                        print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
+                        print_and_log(f"第 {idx + 1} 个提示词越狱失败!\n")
                         continue
                     else:
                         # 已达最大迭代次数
-                        print_and_log(f"\n******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
+                        print_and_log(f"******* 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。*******\n")
                         # 保存数据
                         item = {}
                         end_time = time.time()
