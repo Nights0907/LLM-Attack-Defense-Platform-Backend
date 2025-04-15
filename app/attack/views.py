@@ -5,6 +5,7 @@ from flask import render_template, request, session, redirect, url_for, abort, f
 
 # LLM attack 所需包
 from . import attack
+from .customize.attack import custom_attack
 from .deepinception.deepinception import deep_inception
 from .jailbreakingllm.jailbreakingllm import jailbreakingllm
 from .renellm.renellm import renellm
@@ -12,16 +13,16 @@ from .codechameleon.codechameleon import codechameleon
 from .sap.sap import sap
 
 # flask 数据库 所需包
-from app.models import AttackParameter
+from app.models import AttackParameter, attack_method_info
 from datetime import datetime
 
-from .. import mongo
+from .. import mongo, db
 
 
 # 获取 目标大模型 黑盒攻击结果
-@attack.route('/api/attack',methods=['GET','POST'])
+@attack.route('/api/attack',methods=['GET'])
 # @login_required 暂时不需要用户登录
-def _attack():
+def get_attack_response():
     # 获取前端发送的JSON数据
     data = request.get_json()
 
@@ -48,6 +49,9 @@ def _attack():
         malicious_question_set = "app/data/jailbreakingllm/all_problem_test.csv"
     elif data['attack_method'] == "sap" and data["malicious_question_set"] == "advbench" :
         malicious_question_set = "app/data/sap/all_problem_test.csv"
+    else:
+        # 选择自定义攻击方法，目前数据集指定 advbench
+        malicious_question_set = "app/data/renellm/advbench/harmful_behaviors_test.csv"
 
 
     # 创建AttackRecord对象并赋值
@@ -73,8 +77,38 @@ def _attack():
         result = jailbreakingllm(attack_parameter)
     elif data["attack_method"] == "sap":
         result = sap(attack_parameter)
+    else:
+        result = custom_attack(attack_parameter)
 
     return jsonify(result)
+
+@attack.route('/api/attack',methods=['POST'])
+# @login_required 暂时不需要用户登录
+def add_attack_method():
+    data = request.get_json()
+    attack_method_name = data["attack_method_name"]
+    attack_method_prompt = data["attack_method_prompt"]
+
+    # 获取攻击方法 id
+    attack_method_id = str(len(attack_method_info.query.all())+1).zfill(3)
+
+    new_method = attack_method_info(
+        attack_method_id = attack_method_id,
+        attack_method_name = attack_method_name,
+        attack_method_prompt = attack_method_prompt
+    )
+
+    # 插入数据库
+    db.session.add(new_method)
+    db.session.commit()
+
+    # 返回数据
+    attack_method = {}
+    attack_method["attack_method_id"] = attack_method_id
+    attack_method["attack_method_name"] = attack_method_name
+    attack_method["attack_method_prompt"] = attack_method_prompt
+
+    return attack_method
 
 
 # 获取用户历史记录

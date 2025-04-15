@@ -40,7 +40,10 @@ class model_info(db.Model):
     model_name = db.Column(db.String(255), unique=True, nullable=False)
     api_key = db.Column(db.String(255), unique=True, nullable=False)
 
-
+class attack_method_info(db.Model):
+    attack_method_id = db.Column(db.Integer, primary_key=True)
+    attack_method_name = db.Column(db.String(255), unique=True, nullable=False)
+    attack_method_prompt = db.Column(db.String(9999), unique=True, nullable=False)
 
 
 

@@ -67,9 +67,6 @@ def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, st
     """
     base_url, api_key = get_model_info(model)
 
-    # print("base_url : " + base_url)
-    # print("api_key : " + api_key)
-
     client = OpenAI(
         api_key=api_key,
         base_url=base_url
