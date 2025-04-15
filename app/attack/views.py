@@ -98,18 +98,42 @@ def add_attack_method():
         attack_method_prompt = attack_method_prompt
     )
 
-    # 插入数据库
-    db.session.add(new_method)
-    db.session.commit()
-
     # 返回数据
     attack_method = {}
     attack_method["attack_method_id"] = attack_method_id
     attack_method["attack_method_name"] = attack_method_name
     attack_method["attack_method_prompt"] = attack_method_prompt
 
+    # 插入数据库
+    db.session.add(new_method)
+    db.session.commit()
+    db.session.close()
+
     return attack_method
 
+
+@attack.route('/api/attack',methods=['PUT'])
+# @login_required 暂时不需要用户登录
+def modify_attack_method():
+    data = request.get_json()
+    old_attack_method_name = data["old_attack_method_name"]
+    new_attack_method_name = data["new_attack_method_name"]
+    new_attack_method_prompt = data["new_attack_method_prompt"]
+
+    old_attack_method = attack_method_info.query.filter_by(attack_method_name = old_attack_method_name).first()
+    old_attack_method.attack_method_name = new_attack_method_name
+    old_attack_method.attack_method_prompt = new_attack_method_prompt
+
+    # 返回数据
+    attack_method = {}
+    attack_method["attack_method_id"] = old_attack_method.attack_method_id
+    attack_method["attack_method_name"] = new_attack_method_name
+    attack_method["attack_method_prompt"] = new_attack_method_prompt
+
+    db.session.commit()
+    db.session.close()
+
+    return attack_method
 
 # 获取用户历史记录
 @attack.route('/api/history',methods=['GET','POST'])
