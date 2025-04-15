@@ -18,6 +18,8 @@ class AttackParameter(db.Model):
     username = db.Column(db.String(80), index=True)
     # 攻击方法字段（非空）
     attack_method = db.Column(db.String(80), nullable=False, index=True)
+    # 防御方法字段（可为空）
+    defense_method= db.Column(db.String(80), index=True)
     # 有害问题集路径字段
     malicious_question_set = db.Column(db.String(80),index=True)
     # 目标模型名字段（非空）

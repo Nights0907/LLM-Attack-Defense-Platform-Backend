@@ -3,6 +3,7 @@ import random
 import re
 import time
 
+from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
 from app.utils.renellm.data_utils import save_generation
 from app.utils.renellm.harmful_classification_utils import harmful_classification, harmful_classification_by_sorry
@@ -80,8 +81,6 @@ def sap(attack_parameter : AttackParameter):
             prompt = template.format(*random.sample(cases, 3), random.choice(topic))
             messages = [{"role": "user", "content": prompt}]
 
-            print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {num_of_cases} 个提示词的越狱攻击! *******\n")
-
             output = get_llm_responses_stream(attack_model, messages, temperature, retry_times)
             match = re.search(r'###(.*?)###', output, re.DOTALL)
 
@@ -92,10 +91,17 @@ def sap(attack_parameter : AttackParameter):
             else:
                 content = match.group(1)
 
-                user_message = {"role": "user", "content": content}
+                if attack_parameter.defense_method != "":
+                    print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+                    final_question = adapt_defense_method(attack_parameter, content)
+                    print_and_log(f"最终提示词:\n{final_question}\n")
+                else:
+                    final_question = content
+
+                print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {num_of_cases} 个提示词的越狱攻击! *******\n")
+                user_message = {"role": "user", "content": final_question}
                 messages = [user_message]
 
-                start_time = time.time()
                 attack_output = get_llm_responses_stream(attack_model, messages, temperature, retry_times)
 
             loop_count += 1  # 增加迭代计数

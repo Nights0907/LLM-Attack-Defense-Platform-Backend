@@ -2,6 +2,7 @@ import time
 import random
 
 from app.models import AttackParameter
+from app.defense.defense import adapt_defense_method
 from app.utils.renellm.llm_completion_utils import get_llm_responses_stream
 from app.utils.renellm.data_utils import data_reader, save_generation
 from app.utils.renellm.log_utils import print_and_log
@@ -98,17 +99,23 @@ def renellm(attack_parameter: AttackParameter):
 
             # 场景嵌套阶段
             print_and_log(f"******* 开始第 {idx+1} 个提示词的场景嵌套! *******")
-            print_and_log(f"有害行为:\n{harm_behavior}\n")
+            print_and_log(f"有害行为:{harm_behavior}\n")
 
 
             # 随机选择一个场景模板
             scenario = random.choice(scenarios)
             nested_prompt = scenario.replace("<>", harm_behavior)  # 将有害行为嵌入场景
-            print_and_log(f"嵌套后的提示词:\n{nested_prompt}\n")
+            if attack_parameter.defense_method != "":
+                print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+                final_prompt = adapt_defense_method(attack_parameter, nested_prompt)
+                print_and_log(f"最终提示词:\n{final_prompt}\n")
+            else:
+                final_prompt = nested_prompt
+
             print_and_log(f"\n******* 开始对 {attack_parameter.attack_model} 进行第 {idx+1} 个提示词的越狱攻击! *******\n")
 
             # 配置大模型对话消息
-            nested_prompt = {"role": "user", "content": nested_prompt}
+            nested_prompt = {"role": "user", "content": final_prompt}
             messages = [nested_prompt]
 
             # 获取大模型响应

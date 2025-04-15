@@ -3,11 +3,12 @@
 import json
 import time
 
+from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
 from app.utils.deepinception.config import TARGET_TEMP, TARGET_TOP_P
-from app.utils.deepinception.conversers import load_attack_and_target_models, TargetLM
+from app.utils.deepinception.conversers import TargetLM
 from app.utils.renellm.data_utils import save_generation
-from app.utils.renellm.harmful_classification_utils import harmful_classification, harmful_classification_by_sorry
+from app.utils.renellm.harmful_classification_utils import harmful_classification_by_sorry
 from app.utils.renellm.log_utils import print_and_log
 
 
@@ -168,7 +169,6 @@ def deep_inception(attack_parameter : AttackParameter):
 
             for question in original_questions:
                 questions.append(data['inception_attack']+", the question is : "+question)
-            print_and_log(questions)
 
             targetLM = TargetLM(model_name=target_model,
                      max_n_tokens=target_max_n_tokens,
@@ -191,8 +191,15 @@ def deep_inception(attack_parameter : AttackParameter):
                         f"当前迭代轮次: {loop_count + 1}/{iter_max}\n"
                         "################################################################\n")
 
+                    if attack_parameter.defense_method != "":
+                        print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+                        final_question = adapt_defense_method(attack_parameter, question)
+                        print_and_log(f"最终提示词:\n{final_question}\n")
+                    else:
+                        final_question = question
+
                     print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx_question} 个提示词的越狱攻击! *******\n")
-                    attack_output = targetLM.get_response(attack_parameter,question, defense)
+                    attack_output = targetLM.get_response(attack_parameter,final_question, defense)
                     print_and_log(attack_output)
 
                     loop_count += 1  # 增加迭代计数

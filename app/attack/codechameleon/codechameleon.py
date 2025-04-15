@@ -41,7 +41,7 @@ def codechameleon(attack_parameter : AttackParameter):
     # 获取原始 prompts 模板
     prompts, original_queries = get_prompts(attack_parameter.prompt,prompt_style, attack_parameter.malicious_question_set, encrypt_rule)
     # 包装成 大模型对话框架
-    complete_prompts,original_queries_list = complete_format(prompts, original_queries)
+    complete_prompts,original_queries_list = complete_format(attack_parameter, prompts, original_queries)
     # 获取攻击结果
 
     results = []
@@ -67,10 +67,16 @@ def codechameleon(attack_parameter : AttackParameter):
                 # 保存原始有害问题
                 original_harm_behavior = original_queries_list[idx]
 
+                if attack_parameter.defense_method != "":
+                    print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+                    chat_prompt_new = chat_prompt[1].get("content")
+                    print_and_log(f"最终提示词:\n{chat_prompt_new}\n")
+                else:
+                    chat_prompt = chat_prompt
+
                 print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx+1} 个提示词的越狱攻击! *******\n")
 
                 attack_output = get_llm_responses_stream(attack_parameter.attack_model, chat_prompt, temperature,attack_parameter.retry_times)
-                print_and_log('\n')
 
                 loop_count += 1  # 增加迭代计数
 

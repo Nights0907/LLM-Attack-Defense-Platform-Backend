@@ -1,13 +1,10 @@
-import time
-
-from openai import OpenAI
-
-from app.attack.jailbreakingllm.common import get_api_key, conv_template, extract_json
+from app.attack.jailbreakingllm.common import conv_template, extract_json
 # from language_models import APILiteLLM, GPT
 from app.attack.jailbreakingllm.language_models import GPT
-from app.attack.jailbreakingllm.config import FASTCHAT_TEMPLATE_NAMES, Model
+from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
+from app.utils.renellm.llm_completion_utils import get_llm_responses_stream
+from app.utils.renellm.log_utils import print_and_log
 
 
 def load_attack_and_target_models(attack_model,attack_max_n_tokens,max_n_attack_attempts,category,evaluate_locally,target_model,target_max_n_tokens,jailbreakbench_phase):
@@ -174,26 +171,18 @@ class TargetLM():
 
     def get_response(self, attack_parameter : AttackParameter,prompts_list,goal,idx):
 
-        if self.use_jailbreakbench:
+        user_input = prompts_list[0]
 
-            user_input = prompts_list[0]
-            user_message = {"role": "user", "content": user_input}
-            messages = [user_message]
-
-            model_output = get_llm_responses_stream(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
-
+        if attack_parameter.defense_method != "":
+            print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+            final_question = adapt_defense_method(attack_parameter, user_input)
+            print_and_log(f"最终提示词:\n{final_question}\n")
         else:
-            batchsize = len(prompts_list)
-            convs_list = [conv_template(self.template) for _ in range(batchsize)]
-            full_prompts = []
-            for conv, prompt in zip(convs_list, prompts_list):
-                conv.append_message(conv.roles[0], prompt)
-                full_prompts.append(conv.to_openai_api_messages())
+            final_question = user_input
 
-            model_output = self.model.batched_generate(
-                                                            full_prompts,
-                                                            max_n_tokens = self.max_n_tokens,  
-                                                            temperature = self.temperature,
-                                                            top_p = self.top_p
-                                                        )
+        user_message = {"role": "user", "content": final_question}
+        messages = [user_message]
+
+        model_output = get_llm_responses_stream(attack_parameter.attack_model,messages,0,attack_parameter.retry_times)
         return model_output
+

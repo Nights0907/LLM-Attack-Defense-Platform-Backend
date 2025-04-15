@@ -206,8 +206,6 @@ def jailbreakingllm(attack_parameter : AttackParameter):
 
                 print_and_log(f"******* 开始对 {attack_parameter.attack_model} 进行第 {idx + 1} 个提示词的越狱攻击! *******\n")
                 attack_output = targetLM.get_response(attack_parameter, adv_prompt_list,goal,idx)
-                print_and_log(attack_output)
-
                 loop_count += 1  # 增加迭代计数
 
                 # 初步检查输出中是否包含道歉内容

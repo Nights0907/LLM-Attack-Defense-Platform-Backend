@@ -61,10 +61,12 @@ def get_attack_response():
     attack_parameter.time = formatted_time
     attack_parameter.username = username
     attack_parameter.attack_method = data['attack_method']
+    attack_parameter.defense_method = data['defense_method']
     attack_parameter.malicious_question_set = malicious_question_set
     attack_parameter.attack_model = data['attack_model']
     attack_parameter.retry_times = 10
     attack_parameter.prompt = data['prompt']
+
 
     # 处理后端逻辑,目前可以选择五种攻击方法
     if data["attack_method"] == "renellm" :
