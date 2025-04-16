@@ -1,10 +1,8 @@
-import json
-
 import openai
 import re
 from openai import OpenAI
 
-from app.utils.renellm.llm_completion_utils import get_llm_responses
+from app.utils.llm_completion_utils import get_llm_responses
 
 
 #@backoff.on_exception(backoff.expo, (openai.error.RateLimitError, openai.error.APIError, openai.error.APIConnectionError, openai.error.Timeout))

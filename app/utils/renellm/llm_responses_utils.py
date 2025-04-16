@@ -1,4 +1,4 @@
-from app.utils.renellm.llm_completion_utils import get_llm_responses, claudeCompletion
+from app.utils.llm_completion_utils import get_llm_responses, claudeCompletion
 
 def gpt_responses(args, text: str):
     user_input = text

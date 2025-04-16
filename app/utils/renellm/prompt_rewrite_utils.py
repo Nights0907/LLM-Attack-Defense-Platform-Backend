@@ -1,8 +1,8 @@
 import random
 
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses
-from app.utils.renellm.data_utils import remove_number_prefix
+from app.utils.llm_completion_utils import get_llm_responses
+from app.utils.data_utils import remove_number_prefix
 
 # Six rewrite functions we used
 

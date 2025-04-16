@@ -84,13 +84,12 @@ def get_llm_responses_stream(model, messages, temperature=0.7, retry_times=3, st
 
             if stream:
                 full_response = ""
-                print(f"[{model} 流式输出]:\n", end=" ", flush=True)
+                print(f"*************{model} 大模型的输出如下:*************\n", end=" ", flush=True)
                 for chunk in response:
                     content = chunk.choices[0].delta.content or ""
                     log_message(content)
                     print(content, end="", flush=True)  # 实时打印
                     full_response += content
-                print_and_log('\n')
                 return full_response.strip()
             else:
                 return response.choices[0].message.content.strip()

@@ -1,19 +1,9 @@
-import os
-
-from openai import OpenAI
-
 # import litellm
-from app.attack.jailbreakingllm.config import TOGETHER_MODEL_NAMES, LITELLM_TEMPLATES, API_KEY_NAMES, Model
-from app.attack.jailbreakingllm.loggers import logger
-from app.attack.jailbreakingllm.common import get_api_key
 
 import time
 from typing import Dict, List
 
-import openai
-
-from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses, get_llm_responses_stream
+from app.utils.llm_completion_utils import get_llm_responses, get_llm_responses_stream
 
 
 class LanguageModel():

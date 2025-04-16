@@ -7,8 +7,8 @@ current_script_path = os.path.abspath(__file__)
 parent_dir = os.path.dirname(os.path.dirname(current_script_path))
 sys.path.append(parent_dir)
 
-from app.utils.renellm.data_utils import jailbroken_data_reader
-from app.utils.renellm.harmful_classification_utils import harmful_classification
+from app.utils.data_utils import jailbroken_data_reader
+from app.utils.harmful_classification_utils import harmful_classification
 
 
 def main(args):

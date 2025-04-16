@@ -1,9 +1,9 @@
-from app.attack.jailbreakingllm.common import conv_template, extract_json
+from app.attack.jailbreakingllm.common import extract_json
 # from language_models import APILiteLLM, GPT
 from app.attack.jailbreakingllm.language_models import GPT
 from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
-from app.utils.renellm.llm_completion_utils import get_llm_responses_stream
+from app.utils.llm_completion_utils import get_llm_responses_stream
 from app.utils.renellm.log_utils import print_and_log
 
 

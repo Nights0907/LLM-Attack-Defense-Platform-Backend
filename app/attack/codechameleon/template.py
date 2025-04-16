@@ -1,3 +1,5 @@
+from typing import List
+
 from app.utils.codechameleon.utils import get_queries
 from app.attack.codechameleon.decrypt import REVERSE, BINARY_TREE, ODD_EVEN, LENGTH
 
@@ -167,20 +169,11 @@ def get_prompts_code(encrypted_queries, encrypt_rule):
 
     return complete_prompts
 
-def get_prompts(prompt,prompt_style,problem_path,encrypt_rule):
-    # 如果给定prompt,则加载默认问题
+def get_prompts(prompt_style,data,encrypt_rule):
     global complete_prompts
-    if prompt is not None:
-        original_queries, encrypted_queries = get_queries(prompt,problem_path, encrypt_rule)
-        if prompt_style=='text':
-            complete_prompts = get_prompts_text(encrypted_queries, encrypt_rule)
-        if prompt_style=='code':
-            complete_prompts = get_prompts_code(encrypted_queries, encrypt_rule)
-        return complete_prompts, original_queries
-    else :
-        original_queries, encrypted_queries = get_queries(prompt,problem_path, encrypt_rule)
-        if prompt_style=='text':
-            complete_prompts = get_prompts_text(encrypted_queries, encrypt_rule)
-        if prompt_style=='code':
-            complete_prompts = get_prompts_code(encrypted_queries, encrypt_rule)
-        return complete_prompts, original_queries
+    original_queries, encrypted_queries = get_queries(data, encrypt_rule)
+    if prompt_style=='text':
+        complete_prompts = get_prompts_text(encrypted_queries, encrypt_rule)
+    if prompt_style=='code':
+        complete_prompts = get_prompts_code(encrypted_queries, encrypt_rule)
+    return complete_prompts[0]

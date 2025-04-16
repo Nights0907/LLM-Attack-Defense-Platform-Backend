@@ -1,8 +1,8 @@
 import os, json
 import argparse
 
-from app.utils.renellm.data_utils import jailbroken_data_reader
-from app.utils.renellm.harmful_classification_utils import harmful_classification, TEST_PREFIXES
+from app.utils.data_utils import jailbroken_data_reader
+from app.utils.harmful_classification_utils import harmful_classification, TEST_PREFIXES
 
 def main(args):
     data = jailbroken_data_reader(args.data_path)
