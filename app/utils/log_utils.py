@@ -1,4 +1,6 @@
+import io
 import logging
+import sys
 
 # 1. 禁用 Flask/Werkzeug 的日志写入文件，但允许控制台输出
 werkzeug_logger = logging.getLogger('werkzeug')
@@ -9,9 +11,11 @@ custom_logger = logging.getLogger("my_app_logger")
 custom_logger.setLevel(logging.INFO)
 
 # 3. 文件处理器（仅记录自定义日志）
-file_handler = logging.FileHandler("app.log", mode="a")
+file_handler = logging.FileHandler("app.log", mode="a",encoding='utf-8')
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 custom_logger.addHandler(file_handler)
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
 
 # 记录日志的方法
 def print_and_log(content):

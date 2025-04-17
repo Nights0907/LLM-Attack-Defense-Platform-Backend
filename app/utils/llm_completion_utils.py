@@ -6,7 +6,7 @@ import requests
 
 from openai import OpenAI
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-from app.utils.renellm.log_utils import log_message, print_and_log
+from app.utils.log_utils import log_message, print_and_log
 
 
 def get_model_info(model_name:str):
@@ -16,13 +16,10 @@ def get_model_info(model_name:str):
 # for gpt
 def get_llm_responses(model, messages, temperature, retry_times):
 
-    base_url,api_keys = get_model_info(model)
-
-    # print("base_url : "+base_url)
-    # print("api_keys : " + api_keys)
+    base_url,api_key = get_model_info(model)
 
     client = OpenAI(
-        api_key=api_keys,
+        api_key=api_key,
         base_url=base_url
     )
 

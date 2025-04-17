@@ -4,7 +4,7 @@ import re
 
 from app.models import AttackParameter
 from app.utils.llm_completion_utils import get_llm_responses_stream
-from app.utils.renellm.log_utils import print_and_log
+from app.utils.log_utils import print_and_log
 from app.utils.sap.utils.openai_api import GPT_eval_score
 
 with open('./app/data/sap/data/initial_cases1.json', 'r', encoding="utf8") as file:
@@ -48,7 +48,7 @@ def sap(attack_parameter : AttackParameter,data,idx):
 
     # 提示词改写阶段
     while True:
-        print_and_log(f"******* 开始sap攻击提示词嵌套! *******")
+        print_and_log(f"\n************** 开始sap攻击提示词嵌套! **************\n")
 
         prompt = template.format(*random.sample(cases, 3), data)
         messages = [{"role": "user", "content": prompt}]
@@ -57,12 +57,12 @@ def sap(attack_parameter : AttackParameter,data,idx):
         match = re.search(r'###(.*?)###', output, re.DOTALL)
 
         if match is None:
-            print_and_log(f"******* 第 {idx+1} 个sap攻击提示词嵌套失败，正在重新尝试! *******\n")
+            print_and_log(f"\n************** 第 {idx+1} 个sap攻击提示词嵌套失败，正在重新尝试! *******\n")
             num_of_cases += 1
             continue
         else:
             content = match.group(1)
-            print_and_log(f"******* 第 {idx+1} 个sap攻击提示词嵌套成功! *******\n")
+            print_and_log(f"\n************** 第 {idx+1} 个sap攻击提示词嵌套成功! *******\n")
             return content
 
 

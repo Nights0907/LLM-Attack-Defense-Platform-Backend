@@ -4,7 +4,7 @@ from app.attack.jailbreakingllm.language_models import GPT
 from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
 from app.utils.llm_completion_utils import get_llm_responses_stream
-from app.utils.renellm.log_utils import print_and_log
+from app.utils.log_utils import print_and_log
 
 
 def load_attack_and_target_models(attack_model,attack_max_n_tokens,max_n_attack_attempts,category,evaluate_locally,target_model,target_max_n_tokens,jailbreakbench_phase):

@@ -2,9 +2,8 @@ import copy
 import csv, json, re
 import os
 
-from app import mongo
+from app import mongo, db
 from app.models import AttackParameter
-
 
 # read the harmful behaviors dataset
 def data_reader(data_path):
@@ -38,7 +37,7 @@ def save_generation(date_time:str,attack_parameter: AttackParameter, results,suc
     temp_result['judge_model'] = attack_parameter.attack_model
 
     if attack_parameter.prompt == "":
-        temp_result['attack_dataset'] = os.path.splitext(os.path.basename(attack_parameter.malicious_question_set))[0]
+        temp_result['attack_dataset'] = attack_parameter.malicious_question_set
     else:
         temp_result['attack_question'] = attack_parameter.prompt
     temp_result['date'] = date_time

@@ -114,7 +114,6 @@
 </head>
 <body>
     <div class="toolbar">
-        <button id="generate-log">▶️ 开始记录</button>
         <button id="clear-log">🧹 清空日志</button>
     </div>
 
@@ -123,7 +122,7 @@
     <div class="status-bar">
         <span>🟢 已连接</span>
         <span>📝 行数: <span id="line-count">0</span></span>
-        <span>⚙️ GB18030</span>
+        <span>⚙️ UTF-8</span>
     </div>
 
     <script>
@@ -191,12 +190,6 @@
             appendLog("\n\n--- 连接中断，尝试重新连接... ---\n");
             setTimeout(() => location.reload(), 5000);
         };
-
-        document.getElementById('generate-log').addEventListener('click', () => {
-            fetch('/start-logging').catch(err => {
-                appendLog(`\n请求错误: ${err}\n`);
-            });
-        });
 
         setInterval(() => {
             if (buffer.length > 0) renderBuffer();

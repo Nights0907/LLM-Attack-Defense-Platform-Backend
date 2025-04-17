@@ -8,7 +8,6 @@ import pandas as pd
 # your openai key
 # OPENAI_API_KEY = "your openai key here"
 
-
 MODEL_NAME_4 = 'gpt-4-1106-preview'
 
 WAIT_TIME = 10

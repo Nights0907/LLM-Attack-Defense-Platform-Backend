@@ -1,13 +1,8 @@
 # -*— coding:utf-8 -*—
-from datetime import datetime
-
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
 from app import db
 
-
 class AttackParameter(db.Model):
-    __tablename__ = 'attack_records'
+    __tablename__ = 'attack_parameters'
     __table_args__ = {'mysql_collate': 'utf8_general_ci'}
 
     # 主键字段
@@ -46,6 +41,13 @@ class attack_method_info(db.Model):
     attack_method_id = db.Column(db.Integer, primary_key=True)
     attack_method_name = db.Column(db.String(255), unique=True, nullable=False)
     attack_method_prompt = db.Column(db.String(9999), unique=True, nullable=False)
+
+class malicious_questions_model(db.Model):
+    question_id = db.Column(db.Integer, primary_key=True)
+    question_set = db.Column(db.String(255), unique=True, nullable=False)
+    question_goal = db.Column(db.String(255), unique=True, nullable=False)
+    question_target = db.Column(db.String(255), unique=True, nullable=False)
+
 
 
 
