@@ -20,6 +20,7 @@ from .jailbreakingllm.jailbreakingllm import jailbreakingllm
 from .renellm.renellm import renellm
 from .codechameleon.codechameleon import codechameleon
 from .sap.sap import sap
+from ..defense.in_context_defense import in_context_defense
 
 from ..models import AttackParameter, attack_method_info
 from ..models import malicious_questions_model
@@ -167,17 +168,22 @@ def get_attack_response():
 
             if attack_parameter.defense_method != "":
                 print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
-                final_prompt = adapt_defense_method(attack_parameter, attack_prompt)
-                print_and_log(f"最终提示词:\n{final_prompt}\n")
+                if attack_parameter.defense_method == "in_context_defense":
+                    formated_messages = in_context_defense(attack_prompt)
+                    messages = formated_messages
+                    print_and_log(f"最终提示词:\n{attack_prompt}\n")
+                else:
+                    final_prompt = adapt_defense_method(attack_parameter, attack_prompt)
+                    messages = [{"role": "user", "content": final_prompt}]
+                    print_and_log(f"最终提示词:\n{final_prompt}\n")
             else:
-                final_prompt = attack_prompt
+                messages = [{"role": "user", "content": attack_prompt}]
 
             print_and_log(
                 f"\n************** 对 {attack_parameter.attack_model} 的第 {idx + 1} 个提示词的防御保护构建完成! **************\n")
 
             ########################### 防御模块 ###########################
 
-            messages = [{"role":"user","content":final_prompt}]
 
             # 获取大模型响应
             attack_output = get_llm_responses_stream(attack_parameter.attack_model,messages,random.uniform(0, 1),attack_parameter.retry_times,True)
