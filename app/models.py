@@ -19,6 +19,8 @@ class AttackParameter(db.Model):
     malicious_question_set = db.Column(db.String(80),index=True)
     # 目标模型名字段（非空）
     attack_model = db.Column(db.String(80), nullable=False, index=True)
+    # 评估模型名字段（非空）
+    judge_model = db.Column(db.String(80), nullable=False, index=True)
     # 重试次数字段（非空）
     retry_times = db.Column(db.Integer, nullable=True, default=10)
     # prompt 加载默认问题

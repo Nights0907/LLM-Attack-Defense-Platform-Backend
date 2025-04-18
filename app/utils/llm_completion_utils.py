@@ -14,7 +14,7 @@ def get_model_info(model_name:str):
     return curr_model.base_url,curr_model.api_key
 
 # for gpt
-def get_llm_responses(model, messages, temperature, retry_times):
+def get_llm_responses(model, messages, temperature):
 
     base_url,api_key = get_model_info(model)
 
@@ -22,19 +22,6 @@ def get_llm_responses(model, messages, temperature, retry_times):
         api_key=api_key,
         base_url=base_url
     )
-
-    # # 科大讯飞 星火 api
-    # elif model == "lite" :
-    #     client = OpenAI(
-    #         api_key=spark_api_key,
-    #         base_url="https://spark-api-open.xf-yun.com/v1/chat/completions"
-    #     )
-
-    # # 百度 文心一言 api
-    # elif model == "ernie-4.5-8k-preview":
-    #     model_output = get_baidu_response(model, messages)
-    #     return model_output
-
 
     try:
         response = client.chat.completions.create(

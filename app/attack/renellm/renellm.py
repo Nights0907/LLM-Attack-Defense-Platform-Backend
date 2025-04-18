@@ -4,7 +4,7 @@ from app.models import AttackParameter
 from app.utils.log_utils import print_and_log
 from app.utils.renellm.prompt_rewrite_utils import shortenSentence, misrewriteSentence, changeOrder, addChar,languageMix, styleChange
 from app.utils.renellm.scenario_nest_utils import SCENARIOS
-from app.utils.harmful_classification_utils import harmful_classification
+from app.evaluation.evaluation_utils import harmful_classification
 
 
 def renellm(attack_parameter: AttackParameter,data,idx):
@@ -38,7 +38,7 @@ def renellm(attack_parameter: AttackParameter,data,idx):
         # 检查提示词是否已被改写为无害
         print_and_log("\n************** 检查提示词是否已被改写为无害 **************\n")
         label = harmful_classification(attack_parameter, harm_behavior)
-        print_and_log(f"{attack_parameter.attack_model} 给出的标签是: {label}\n")
+        print_and_log(f"{attack_parameter.judge_model} 给出的标签是: {label}\n")
 
         if label == "1":  # 1表示有害
             print_and_log(f"\n************** 第 {idx+1} 个提示词改写完成! **************\n")

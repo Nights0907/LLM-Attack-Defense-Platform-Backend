@@ -18,8 +18,7 @@ def shortenSentence(attack_parameter:AttackParameter, sentence):
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages, 
                                   # args.temperature, 
-                                  random.uniform(0, 1), # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
+                                  1, # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
                                   )
     
     # Randomly select a candidate
@@ -47,9 +46,8 @@ Return the modified sentence only: \n\n"
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages,
                                   # args.temperature,
-                                  random.uniform(0, 1),
+                                  1,
                                   # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
                                   )
     
     return model_output
@@ -70,9 +68,8 @@ Return the rewritten sentence only: \n\n"
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages,
                                   # args.temperature,
-                                  random.uniform(0, 1),
+                                  1,
                                   # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
                                   )
     
     return model_output
@@ -93,9 +90,8 @@ Return the rewritten sentence only: \n\n"
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages,
                                   # args.temperature,
-                                  random.uniform(0, 1),
+                                  1,
                                   # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
                                   )
     return model_output
 
@@ -117,9 +113,8 @@ Return the rewritten mix of Chinese and English sentence only: \n\n"
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages,
                                   # args.temperature,
-                                  random.uniform(0, 1),
+                                  1,
                                   # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
                                   )
     
     return model_output
@@ -141,9 +136,8 @@ Return the rewritten sentence only: \n\n"
     model_output = get_llm_responses(attack_parameter.attack_model,
                                   messages,
                                   # args.temperature,
-                                  random.uniform(0, 1),
+                                  1,
                                   # If the prompt always is rewritten to be harmless, use random temperature instead of 0.
-                                  attack_parameter.retry_times,
                                   )
     
     return model_output

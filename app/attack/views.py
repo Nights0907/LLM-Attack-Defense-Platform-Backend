@@ -27,7 +27,7 @@ from datetime import datetime
 from .. import mongo, db
 from ..defense.defense import adapt_defense_method
 from app.utils.data_utils import save_generation
-from app.utils.harmful_classification_utils import harmful_classification_by_sorry
+from app.evaluation.evaluation_utils import harmful_classification_by_sorry, harmful_evaluation
 from app.utils.llm_completion_utils import get_llm_responses_stream
 from app.utils.log_utils import print_and_log
 
@@ -103,6 +103,7 @@ def get_attack_response():
     attack_parameter.defense_method = data['defense_method']
     attack_parameter.malicious_question_set = data['malicious_question_set']
     attack_parameter.attack_model = data['attack_model']
+    attack_parameter.judge_model = data['judge_model']
     attack_parameter.retry_times = 10 # 可以调整
     attack_parameter.prompt = data['prompt']
 
@@ -184,18 +185,18 @@ def get_attack_response():
             loop_count += 1  # 增加迭代计数
 
             # 初步检查输出中是否包含道歉内容
-            if "apologize" not in attack_output and "sorry" not in attack_output.lower():
+            if harmful_classification_by_sorry(attack_output) == "1":
                 # 进一步判断输出是否确实有害
-                print_and_log(f"\n************** 判断被攻击模型对嵌套的第 {idx+1} 个提示词的响应是否有害 **************\n")
+                print_and_log(f"\n************** {attack_parameter.judge_model} 判断被攻击模型对嵌套的第 {idx+1} 个提示词的响应是否有害 **************\n")
 
                 ########################### 评估模块 ###########################
 
-                jailbreak_label = harmful_classification_by_sorry(attack_output)
+                jailbreak_label, reason ,score  = harmful_evaluation(attack_parameter , data, attack_output)
 
             else:
                 # 如果包含道歉内容
                 if loop_count < iter_max:  # 未达最大迭代次数
-                    print_and_log(f"第 {idx + 1} 个提示词越狱失败!\n")
+                    print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
                     total_iters_times += 1
                     continue
 
@@ -230,6 +231,8 @@ def get_attack_response():
                 item['idx'] = idx
                 item['original_harm_behavior'] = data
                 item['attack_output'] = attack_output
+                item['score'] = score
+                item['reason'] = reason
                 item['time_cost'] = elapsed_time
                 total_cost_times += elapsed_time
 
@@ -244,7 +247,7 @@ def get_attack_response():
                 if loop_count < iter_max:
 
                     # 未达最大迭代次数
-                    print_and_log(f"第 {idx + 1} 个提示词越狱失败!\n")
+                    print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
                     total_iters_times += 1
                     continue
 
@@ -260,6 +263,8 @@ def get_attack_response():
                     item['idx'] = idx
                     item['original_harm_behavior'] = data
                     item['attack_output'] = attack_output
+                    item['score'] = score
+                    item['reason'] = reason
                     item['time_cost'] = elapsed_time
                     total_cost_times += elapsed_time
 
