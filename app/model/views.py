@@ -1,5 +1,5 @@
 # -*— coding:utf-8 -*—
-from flask import render_template, Response, request, jsonify
+from flask import request, jsonify
 from . import model
 from ..models import model_info
 
