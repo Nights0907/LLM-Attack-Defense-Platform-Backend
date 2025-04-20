@@ -44,6 +44,11 @@ class attack_method_info(db.Model):
     attack_method_name = db.Column(db.String(255), unique=True, nullable=False)
     attack_method_prompt = db.Column(db.String(9999), unique=True, nullable=False)
 
+class defense_method_info(db.Model):
+    defense_method_id = db.Column(db.Integer, primary_key=True)
+    defense_method_name = db.Column(db.String(255), unique=True, nullable=False)
+    defense_method_prompt = db.Column(db.String(9999), unique=True, nullable=False)
+
 class malicious_questions_model(db.Model):
     question_id = db.Column(db.Integer, primary_key=True)
     question_set = db.Column(db.String(255), unique=True, nullable=False)

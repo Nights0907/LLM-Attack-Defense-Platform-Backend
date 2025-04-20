@@ -16,6 +16,7 @@ from flask import request, jsonify
 from . import attack
 from .customize.attack import custom_attack
 from .deepinception.deepinception import deep_inception
+from .in_context_attack import in_context_attack
 from .jailbreakingllm.jailbreakingllm import jailbreakingllm
 from .renellm.renellm import renellm
 from .codechameleon.codechameleon import codechameleon
@@ -156,6 +157,7 @@ def get_attack_response():
                 attack_prompt = sap(attack_parameter,data,idx)
             else:
                 attack_prompt = custom_attack(attack_parameter)
+
 
             print_and_log(
                 f"\n************** 对 {attack_parameter.attack_model} 的第 {idx + 1} 个提示词的越狱攻击构建完成! **************\n")

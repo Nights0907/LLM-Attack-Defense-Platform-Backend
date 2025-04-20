@@ -38,6 +38,7 @@ def create_app(config_name):
     mongo.init_app(app) # initialization
 
     # 注册蓝图(导入包初始化模块__init__中的内容时，需要加‘.’)
+    from .defense import defense as defense_bp
     from .user import user as user_bp
     from .model import model as model_bp
     from .attack import attack as attack_bp
@@ -45,6 +46,7 @@ def create_app(config_name):
     from .index import logs as logs_bp
     from .index import logging as logging_bp
 
+    app.register_blueprint(defense_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(model_bp)
     app.register_blueprint(attack_bp)
