@@ -11,7 +11,7 @@ custom_logger = logging.getLogger("my_app_logger")
 custom_logger.setLevel(logging.INFO)
 
 # 3. 文件处理器（仅记录自定义日志）
-file_handler = logging.FileHandler("app.log", mode="a",encoding='utf-8')
+file_handler = logging.FileHandler("app.log", mode="a")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 custom_logger.addHandler(file_handler)
 
@@ -67,3 +67,9 @@ def generate_logs():
 
         except Exception as e:
             yield f"data: Error: {str(e)}\n\n"
+
+
+
+
+
+

@@ -1,10 +1,12 @@
 # -*— coding:utf-8 -*—
 from flask import Flask,url_for
+from flask_cors import CORS
 from flask_pymongo import PyMongo
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
 from config import config
+
 
 db = SQLAlchemy()
 mongo = PyMongo()  # 延迟初始化
@@ -17,6 +19,7 @@ bootstrap = Bootstrap()
 def create_app(config_name):
     # 创建 flask 实例
     app = Flask(__name__)
+    CORS(app, resources=r'/*')
     # 从配置类中加载配置
     app.config.from_object(config[config_name])
     # 调用配置类中初始化函数，初始化app，这里该初始化函数为空

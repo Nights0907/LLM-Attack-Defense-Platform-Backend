@@ -31,10 +31,10 @@ def save_generation(date_time:str,attack_parameter: AttackParameter, results,suc
     # 存储所有结果
     temp_result = {}
 
-    temp_result['username'] = "zsx"
+    temp_result['username'] = attack_parameter.username
     temp_result['attack_method'] = attack_parameter.attack_method
     temp_result['attack_model'] = attack_parameter.attack_model
-    temp_result['judge_model'] = attack_parameter.attack_model
+    temp_result['judge_model'] = attack_parameter.judge_model
 
     if attack_parameter.prompt == "":
         temp_result['attack_dataset'] = attack_parameter.malicious_question_set

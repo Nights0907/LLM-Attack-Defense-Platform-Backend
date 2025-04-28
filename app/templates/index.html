@@ -176,7 +176,7 @@
             updateStatus();
         });
 
-        const eventSource = new EventSource('/logs');
+        const eventSource = new EventSource('/api/logs');
         eventSource.onmessage = event => {
             if (event.data.trim() === ":heartbeat:") return;
             if(event.data === "ENTER"){

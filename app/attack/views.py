@@ -10,13 +10,14 @@
 
 import random
 import time
+import os
+import json
 
 from bson import json_util
-from flask import request, jsonify
+from flask import request, jsonify, Response
 from . import attack
 from .customize.attack import custom_attack
 from .deepinception.deepinception import deep_inception
-from .in_context_attack import in_context_attack
 from .jailbreakingllm.jailbreakingllm import jailbreakingllm
 from .renellm.renellm import renellm
 from .codechameleon.codechameleon import codechameleon
@@ -35,7 +36,7 @@ from app.utils.log_utils import print_and_log
 
 
 # 获取 目标大模型 黑盒攻击结果
-@attack.route('/api/attack',methods=['GET'])
+@attack.route('/api/attack/execute',methods=['POST'])
 # @login_required 暂时不需要用户登录
 def get_attack_response():
 
@@ -303,6 +304,8 @@ def add_attack_method():
     data = request.get_json()
     attack_method_name = data["attack_method_name"]
     attack_method_prompt = data["attack_method_prompt"]
+    # 获取description字段，如果不存在则设为空字符串
+    attack_method_description = data.get("attack_method_description", "")
 
     # 获取攻击方法 id
     attack_method_id = str(len(attack_method_info.query.all())+1).zfill(3)
@@ -310,7 +313,8 @@ def add_attack_method():
     new_method = attack_method_info(
         attack_method_id = attack_method_id,
         attack_method_name = attack_method_name,
-        attack_method_prompt = attack_method_prompt
+        attack_method_prompt = attack_method_prompt,
+        attack_method_description = attack_method_description
     )
 
     # 返回数据
@@ -318,6 +322,7 @@ def add_attack_method():
     attack_method["attack_method_id"] = attack_method_id
     attack_method["attack_method_name"] = attack_method_name
     attack_method["attack_method_prompt"] = attack_method_prompt
+    attack_method["attack_method_description"] = attack_method_description
 
     # 插入数据库
     db.session.add(new_method)
@@ -334,21 +339,64 @@ def modify_attack_method():
     old_attack_method_name = data["old_attack_method_name"]
     new_attack_method_name = data["new_attack_method_name"]
     new_attack_method_prompt = data["new_attack_method_prompt"]
+    # 获取description字段，如果不存在则保持原值
+    new_attack_method_description = data.get("new_attack_method_description", None)
 
     old_attack_method = attack_method_info.query.filter_by(attack_method_name = old_attack_method_name).first()
     old_attack_method.attack_method_name = new_attack_method_name
     old_attack_method.attack_method_prompt = new_attack_method_prompt
+
+    # 如果提供了description，则更新
+    if new_attack_method_description is not None:
+        old_attack_method.attack_method_description = new_attack_method_description
 
     # 返回数据
     attack_method = {}
     attack_method["attack_method_id"] = old_attack_method.attack_method_id
     attack_method["attack_method_name"] = new_attack_method_name
     attack_method["attack_method_prompt"] = new_attack_method_prompt
+    attack_method["attack_method_description"] = old_attack_method.attack_method_description
 
     db.session.commit()
     db.session.close()
 
     return attack_method
+
+
+@attack.route('/api/attack',methods=['DELETE'])
+# @login_required 暂时不需要用户登录
+def delete_attack_method():
+    """
+    删除指定的攻击方法
+
+    接收URL参数中的attack_method_name，删除对应的攻击方法
+    """
+    # 获取URL参数中的攻击方法名称
+    attack_method_name = request.args.get('attack_method_name')
+
+    if not attack_method_name:
+        return jsonify({'error': 'Missing attack_method_name parameter'}), 400
+
+    # 查找要删除的攻击方法
+    method_to_delete = attack_method_info.query.filter_by(attack_method_name=attack_method_name).first()
+
+    if not method_to_delete:
+        return jsonify({'error': f'Attack method {attack_method_name} not found'}), 404
+
+    try:
+        # 从数据库中删除
+        db.session.delete(method_to_delete)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Attack method {attack_method_name} deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to delete attack method: {str(e)}'}), 500
+    finally:
+        db.session.close()
 
 # 获取用户历史记录
 @attack.route('/api/history',methods=['GET','POST'])
@@ -379,3 +427,28 @@ def get_history_details_by_attack_id():
 
     return_data = json_util.dumps(attack_results_document)
     return return_data
+
+@attack.route('/api/attack/methods', methods=['GET'])
+# @login_required 暂时不需要用户登录
+def get_all_attack_methods():
+    """
+    获取所有攻击方法列表
+
+    返回所有攻击方法的列表，包含id、名称和提示词
+    """
+    try:
+        methods = attack_method_info.query.all()
+        result = []
+
+        for method in methods:
+            result.append({
+                "id": method.attack_method_id,
+                "name": method.attack_method_name,
+                "prompt": method.attack_method_prompt,
+                "description": method.attack_method_description
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Failed to get attack methods: {str(e)}'}), 500
+

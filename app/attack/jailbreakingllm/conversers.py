@@ -1,5 +1,4 @@
 from app.attack.jailbreakingllm.common import extract_json
-# from language_models import APILiteLLM, GPT
 from app.attack.jailbreakingllm.language_models import GPT
 from app.defense.defense import adapt_defense_method
 from app.models import AttackParameter
