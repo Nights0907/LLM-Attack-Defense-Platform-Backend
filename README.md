@@ -17,10 +17,11 @@
 ## 🚀 快速启动
 
 ### 环境配置
-```bash
+
+# 后端
 # 克隆项目仓库
-git clone https://github.com/Nights0907/LLMAttack-main.git
-cd LLMAttack-main
+git clone https://github.com/Nights0907/LLM-Attack-Defense-Platform-Backend.git
+cd LLM-Attack-Defense-Platform-Backend
 
 # 创建虚拟环境
 conda create -n llm-attack python=3.9 -y
@@ -38,6 +39,15 @@ pip install -r requirements.txt
         app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/llm_attack'
         # 配置mongodb
         app.config["MONGO_URI"] = "mongodb://localhost:27017/llm_attack"
-```bash
+
+# 前端
+# 克隆项目仓库
+git clone https://github.com/Nights0907/LLM-Attack-Defense-Platform-Frontend.git
+cd LLM-Attack-Defense-Platform-Frontend
+
+npm install
+npm run build
+npm run serve
+
 
 ```
