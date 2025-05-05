@@ -33,6 +33,7 @@ def save_generation(date_time:str,attack_parameter: AttackParameter, results,suc
 
     temp_result['username'] = attack_parameter.username
     temp_result['attack_method'] = attack_parameter.attack_method
+    temp_result['defense_method'] = attack_parameter.defense_method
     temp_result['attack_model'] = attack_parameter.attack_model
     temp_result['judge_model'] = attack_parameter.judge_model
 

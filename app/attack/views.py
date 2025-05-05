@@ -31,7 +31,7 @@ from .. import mongo, db
 from ..defense.defense import adapt_defense_method
 from app.utils.data_utils import save_generation
 from app.evaluation.evaluation_utils import harmful_classification_by_sorry, harmful_evaluation
-from app.utils.llm_completion_utils import get_llm_responses_stream
+from app.utils.llm_completion_utils import get_llm_responses_stream, get_llm_responses
 from app.utils.log_utils import print_and_log
 
 
@@ -281,10 +281,10 @@ def get_attack_response():
 
                     break
 
-        # 每处理10个样本保存一次临时数据
-        if (idx + 1)  % 10 == 0:
-            return_data = save_generation(date_time, attack_parameter, results, success_attack, total_iters_times,
-                                          total_cost_times)
+        # # 每处理10个样本保存一次临时数据
+        # if (idx + 1)  % 10 == 0:
+        #     return_data = save_generation(date_time, attack_parameter, results, success_attack, total_iters_times,
+        #                                   total_cost_times)
 
     return_data = save_generation(date_time, attack_parameter, results, success_attack, total_iters_times,
                                   total_cost_times)
@@ -294,8 +294,6 @@ def get_attack_response():
 
 
     return return_data
-
-
 
 
 @attack.route('/api/attack',methods=['POST'])
@@ -452,3 +450,251 @@ def get_all_attack_methods():
     except Exception as e:
         return jsonify({'error': f'Failed to get attack methods: {str(e)}'}), 500
 
+
+def get_attack_response_piliang(attack_method,defense_method,attack_model,judge_model):
+
+    """
+       [核心接口] 执行端到端的黑盒攻击流程
+
+       处理流程：
+       1. 请求验证 -> 2. 数据加载 -> 3. 参数初始化 -> 4. 攻击迭代 -> 5. 防御适配 -> 6. 结果评估 -> 7. 持久化存储
+
+       返回:
+           JSON: 包含攻击结果统计和详细记录的响应数据
+    """
+    # ------------------------ 请求数据验证 ------------------------
+
+
+
+    # ------------------------ 会话标识生成 ------------------------
+
+    date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    id = "zsx"+'_'+date_time
+
+    # ------------------------ 攻击数据加载 ------------------------
+
+    global result
+    datas = []
+
+    malicious_questions = malicious_questions_model.query.filter_by(question_set="advbench").limit(10).all()
+    for question in malicious_questions:
+        datas.append(question.question_goal)
+
+
+    # ------------------------ 攻击参数初始化 ------------------------
+
+    attack_parameter = AttackParameter()
+
+    attack_parameter.id = id
+    attack_parameter.time = date_time
+    attack_parameter.username = "zsx"
+    attack_parameter.attack_method = attack_method
+    attack_parameter.defense_method = defense_method
+    attack_parameter.malicious_question_set = 'advbench'
+    attack_parameter.attack_model = attack_model
+    attack_parameter.judge_model = judge_model
+    attack_parameter.retry_times = 10 # 可以调整
+    attack_parameter.prompt = ""
+
+    ####### 定义初始变量 #######
+    global return_data, attack_prompt
+
+    # 用于收集所有攻击结果
+    results = []
+
+    # 重要数据初始化
+    iter_max = attack_parameter.retry_times
+    success_attack = 0
+    total_iters_times = 0
+    total_cost_times = 0
+
+
+    # ------------------------ 攻击执行主循环 ------------------------
+
+    # 遍历每个有害行为
+    for idx, data in enumerate(datas):
+
+        # 更新数据
+        start_time = time.time()  # 记录开始时间
+        loop_count = 0  # 迭代计数器
+
+        # 主循环
+        while True:
+
+            print_and_log(
+                "\n################################################################\n"
+                f"当前数据: {idx + 1}/{len(datas)}, {data}\n"
+                f"当前迭代轮次: {loop_count + 1}/{iter_max}\n"
+                "################################################################\n")
+
+            print_and_log(
+                f"\n************** 开始对 {attack_parameter.attack_model} 进行第 {idx + 1} 个提示词的越狱攻击! **************\n")
+
+            ########################### 攻击模块 ###########################
+
+            if attack_parameter.attack_method == "renellm" :
+                attack_prompt = renellm(attack_parameter,data,idx)
+            elif  attack_parameter.attack_method == "codechameleon" :
+                attack_prompt = codechameleon(data)
+            elif attack_parameter.attack_method == "deepinception" :
+                attack_prompt = deep_inception(data)
+            elif attack_parameter.attack_method == "jailbreakingllm":
+                attack_prompt = jailbreakingllm(attack_parameter,data)
+            elif attack_parameter.attack_method == "sap":
+                attack_prompt = sap(attack_parameter,data,idx)
+            else:
+                attack_prompt = custom_attack(attack_parameter)
+
+
+            print_and_log(
+                f"\n************** 对 {attack_parameter.attack_model} 的第 {idx + 1} 个提示词的越狱攻击构建完成! **************\n")
+
+
+            ########################### 防御模块 ###########################
+
+            print_and_log(
+                f"\n************** 开始对 {attack_parameter.attack_model} 进行第 {idx + 1} 个提示词的防御保护! **************\n")
+
+            if attack_parameter.defense_method != "":
+                print_and_log(f"应用防御方法:{attack_parameter.defense_method}\n")
+                if attack_parameter.defense_method == "in_context_defense":
+                    formated_messages = in_context_defense(attack_prompt)
+                    messages = formated_messages
+                    print_and_log(f"最终提示词:\n{attack_prompt}\n")
+                else:
+                    final_prompt = adapt_defense_method(attack_parameter, attack_prompt)
+                    messages = [{"role": "user", "content": final_prompt}]
+                    print_and_log(f"最终提示词:\n{final_prompt}\n")
+            else:
+                messages = [{"role": "user", "content": attack_prompt}]
+
+            print_and_log(
+                f"\n************** 对 {attack_parameter.attack_model} 的第 {idx + 1} 个提示词的防御保护构建完成! **************\n")
+
+            ########################### 防御模块 ###########################
+
+
+            # 获取大模型响应
+            attack_output = get_llm_responses(attack_parameter.attack_model,messages,random.uniform(0, 1))
+
+            loop_count += 1  # 增加迭代计数
+
+            # 初步检查输出中是否包含道歉内容
+            if harmful_classification_by_sorry(attack_output) == "1":
+                # 进一步判断输出是否确实有害
+                print_and_log(f"\n************** {attack_parameter.judge_model} 判断被攻击模型对嵌套的第 {idx+1} 个提示词的响应是否有害 **************\n")
+
+                ########################### 评估模块 ###########################
+
+                jailbreak_label, reason ,score  = harmful_evaluation(attack_parameter , data, attack_output)
+
+            else:
+                # 如果包含道歉内容
+                if loop_count < iter_max:  # 未达最大迭代次数
+                    print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
+                    total_iters_times += 1
+                    continue
+
+                else:
+                    # 已达最大迭代次数
+                    print_and_log(f"\n************** 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。**************\n")
+
+                    # 保存数据
+                    item = {}
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time  # 计算耗时
+
+                    # 4 个必要参数
+                    item['idx'] = idx  # 索引
+                    item['original_harm_behavior'] = data  # 原始有害行为
+                    item['attack_output'] = attack_output  # 攻击输出
+                    item['time_cost'] = elapsed_time  # 耗时
+                    total_cost_times += elapsed_time
+
+                    results.append(item)  # 添加到结果列表
+                    break
+
+            # 判断越狱是否成功
+            if jailbreak_label == "1":  # 1表示有害，越狱成功
+                print_and_log(f"\n************** 第 {idx + 1} 个提示词越狱成功! *************\n")
+                # 保存数据
+                item = {}
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+
+                # 4 个必要参数
+                item['idx'] = idx
+                item['original_harm_behavior'] = data
+                item['attack_output'] = attack_output
+                item['score'] = score
+                item['reason'] = reason
+                item['time_cost'] = elapsed_time
+                total_cost_times += elapsed_time
+
+                results.append(item)
+
+                success_attack += 1
+                total_iters_times += 1
+
+                break
+            else:
+                # 越狱失败
+                if loop_count < iter_max:
+
+                    # 未达最大迭代次数
+                    print_and_log(f"\n第 {idx + 1} 个提示词越狱失败!\n")
+                    total_iters_times += 1
+                    continue
+
+                else:
+                    # 已达最大迭代次数
+                    print_and_log(f"\n************** 已达到最大迭代次数 {iter_max}，采用当前轮次结果并结束循环。**************\n")
+                    # 保存数据
+                    item = {}
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
+
+                    # 4 个必要参数
+                    item['idx'] = idx
+                    item['original_harm_behavior'] = data
+                    item['attack_output'] = attack_output
+                    item['score'] = score
+                    item['reason'] = reason
+                    item['time_cost'] = elapsed_time
+                    total_cost_times += elapsed_time
+
+                    results.append(item)
+
+                    break
+
+
+    return_data = save_generation(date_time, attack_parameter, results, success_attack, total_iters_times,
+                                  total_cost_times)
+
+
+    return attack_method +'_'+ defense_method +'_'+ attack_method +'_'+ judge_model +'_'+ "success!"
+
+@attack.route('/api/attack/piliang', methods=['GET'])
+def piliang():
+
+    get_attack_response_piliang("renellm", "in_context_defense", "gpt-4o-mini", "qwen-plus")
+
+    get_attack_response_piliang("codechameleon", "", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("codechameleon", "self_reminders", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("codechameleon", "goal_priority", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("codechameleon", "in_context_defense", "gpt-4o-mini", "qwen-plus")
+
+    get_attack_response_piliang("deepinception", "", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("deepinception", "self_reminders", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("deepinception", "goal_priority", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("deepinception", "in_context_defense", "gpt-4o-mini", "qwen-plus")
+
+    get_attack_response_piliang("jailbreakingllm", "", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("jailbreakingllm", "self_reminders", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("jailbreakingllm", "goal_priority", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("jailbreakingllm", "in_context_defense", "gpt-4o-mini", "qwen-plus")
+
+    get_attack_response_piliang("sap", "", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("sap", "self_reminders", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("sap", "goal_priority", "gpt-4o-mini", "qwen-plus")
+    get_attack_response_piliang("sap", "in_context_defense", "gpt-4o-mini", "qwen-plus")

@@ -11,7 +11,8 @@ migrate = Migrate(app,db)
 manager = Manager(app)
 
 
-
+if __name__ == '__main__':
+    app.run()
 
 
 

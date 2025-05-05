@@ -7,5 +7,5 @@ def adapt_defense_method(attack_parameter:AttackParameter,attack_prompt:str):
     given_defense_method = attack_parameter.defense_method
     if given_defense_method == "self_reminders":
         return self_reminders(attack_prompt)
-    if given_defense_method == "goal_prioritization":
+    if given_defense_method == "goal_priority":
         return goal_priority(attack_prompt)

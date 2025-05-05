@@ -170,7 +170,7 @@ class GPT(LanguageModel):
                  retry_times : int
                  ):
 
-        output = get_llm_responses(attack_model,conv,temperature,retry_times)
+        output = get_llm_responses(attack_model,conv,temperature)
 
         return output
 

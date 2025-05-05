@@ -31,6 +31,7 @@ def get_llm_responses(model, messages, temperature):
             )
 
         model_output = response.choices[0].message.content.strip()
+        print(model_output)
         time.sleep(1)
         return model_output
 
