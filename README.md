@@ -20,8 +20,8 @@
 
 # 后端
 # 克隆项目仓库
-git clone https://github.com/Nights0907/LLMAttack-main.git
-cd LLMAttack-main
+git clone https://github.com/Nights0907/LLM-Attack-Defense-Platform-Backend.git
+cd LLM-Attack-Defense-Platform-Backend
 
 # 创建虚拟环境
 conda create -n llm-attack python=3.9 -y
@@ -42,8 +42,8 @@ pip install -r requirements.txt
 
 # 前端
 # 克隆项目仓库
-git clone https://github.com/Nights0907/LLMAttack-main.git
-cd LLMAttack-Frontend
+git clone https://github.com/Nights0907/LLM-Attack-Defense-Platform-Frontend.git
+cd LLM-Attack-Defense-Platform-Frontend
 
 npm install
 npm run build
